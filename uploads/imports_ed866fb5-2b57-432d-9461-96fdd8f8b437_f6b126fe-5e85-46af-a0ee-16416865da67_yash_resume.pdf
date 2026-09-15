@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1152 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Yash Sharma) '
+(Tijara, Rajasthan, India | ys136450@gmail.com | GitHub: Yas5584 | LinkedIn) '
+(SUMMARY) '
+(AI/ML Engineer focused on Generative AI, LLMs, and Agentic AI systems.) '
+(SKILLS) '
+(Programming: Python, SQL) '
+(Deployment: FastAPI, Flask, Docker, AWS EC2, CI/CD) '
+(EXPERIENCE) '
+(Software Developer Intern — QuadRise Solution LLP) '
+(- Engineered LLM-powered APIs processing 5,000+ monthly requests with low latency) '
+(- Deployed containerized ML services using Docker and AWS EC2 with CI/CD pipelines) '
+(Machine Learning Intern — iNeuron) '
+(- Developed and optimized ML models achieving 92% accuracy for disease prediction) '
+(PROJECTS) '
+(Natural Language to SQL System) '
+(- Designed LLM-based system converting natural language into SQL queries) '
+(Medical Chatbot \(RAG\)) '
+(- Built RAG pipeline using embeddings and vector search over domain documents) '
+(Self-Healing Classification DAG \(LangGraph\)) '
+(- Developed agentic workflow using LangGraph with retry, branching, and failure handling) '
+(EDUCATION) '
+(B.Tech in Artificial Intelligence & Data Science \(2021–2025\) | CGPA: 8.56) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001389 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1515
+%%EOF

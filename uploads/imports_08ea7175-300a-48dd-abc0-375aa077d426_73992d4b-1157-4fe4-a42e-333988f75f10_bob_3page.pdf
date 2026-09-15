@@ -1,0 +1,85 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 265 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Bob Architect) '
+(bob@cloud.com | +1 \(555\) 987-6543 | Austin, TX) '
+(PROFESSIONAL SUMMARY) '
+(Cloud solutions architect with 10 years of experience.) '
+(TECHNICAL SKILLS) '
+(Cloud: AWS, GCP, Azure, Terraform, Docker, Kubernetes) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 384 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(PROFESSIONAL EXPERIENCE) '
+(Lead Cloud Architect | Global Cloud Corp | Mar 2020 – Present) '
+(• Architected multi-region AWS infrastructure with 99.99% SLA) '
+(• Automated deployments using Terraform and GitHub Actions) '
+(Senior DevOps Engineer | InfraScale | Jan 2016 – Feb 2020) '
+(• Managed Kubernetes clusters with 200+ microservices) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 309 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(EDUCATION) '
+(M.S. in Software Engineering | UT Austin | 2014 – 2016) '
+(CERTIFICATIONS) '
+(AWS Certified Solutions Architect – Amazon \(2022\)) '
+(CKA: Certified Kubernetes Administrator – CNCF \(2021\)) '
+(LANGUAGES) '
+(English \(Native\), German \(Conversational\)) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000513 00000 n 
+0000000639 00000 n 
+0000001074 00000 n 
+0000001200 00000 n 
+0000001560 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1686
+%%EOF

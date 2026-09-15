@@ -1,0 +1,49 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 629 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Alice Developer) '
+(alice@example.com | \(555\) 234-5678 | San Francisco, CA) '
+(PROFESSIONAL SUMMARY) '
+(Frontend developer specializing in React and TypeScript.) '
+(TECHNICAL SKILLS) '
+(Languages: TypeScript, JavaScript, HTML, CSS) '
+(Frameworks: React, Next.js, TailwindCSS) '
+(PROFESSIONAL EXPERIENCE) '
+(Frontend Engineer | Acme Inc | Jan 2022 – Present) '
+(• Developed responsive user interfaces serving 500K daily active users) '
+(• Reduced bundle size by 35% through tree shaking and code splitting) '
+(EDUCATION) '
+(B.S. in Computer Science | Stanford University | 2018 – 2022) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000892 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1018
+%%EOF

@@ -1,0 +1,88 @@
+import { FastifyRequest, FastifyReply } from "fastify";
+import jwt from "jsonwebtoken";
+import { env } from "../config/index.js";
+import { AppError } from "../errors/index.js";
+import { AuthenticatedRequestUser } from "@resumeai/shared";
+import { AUTH_COOKIE_NAME } from "../utils/cookies.js";
+import { userRepository } from "../repositories/user.repository.js";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    user?: AuthenticatedRequestUser;
+  }
+}
+
+interface JwtPayload {
+  id: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  sessionId?: string;
+}
+
+export async function authenticate(
+  request: FastifyRequest,
+  _reply: FastifyReply,
+) {
+  let token: string | undefined;
+
+  // 1. Check HttpOnly cookie first (Primary authentication channel)
+  if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
+    token = request.cookies[AUTH_COOKIE_NAME];
+  }
+
+  // 2. Fallback to Authorization: Bearer <token> (API-only clients, scripts, tests)
+  if (!token) {
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  if (!token) {
+    throw AppError.unauthorized("Authentication required");
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+
+    // 3. Ensure token carries a valid sessionId and validate against active database session
+    if (!decoded.sessionId) {
+      throw AppError.unauthorized("Invalid token format: missing session ID");
+    }
+
+    const activeSession = await userRepository.findSessionByToken(
+      decoded.sessionId,
+    );
+
+    if (!activeSession) {
+      throw AppError.unauthorized("Session has been revoked or expired");
+    }
+
+    if (new Date(activeSession.expiresAt) < new Date()) {
+      await userRepository.deleteSessionByToken(decoded.sessionId);
+      throw AppError.unauthorized("Session has expired");
+    }
+
+    request.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      sessionId: decoded.sessionId ?? "",
+    };
+  } catch (err: any) {
+    if (err instanceof AppError) {
+      throw err;
+    }
+    throw AppError.unauthorized("Invalid or expired token");
+  }
+}
+
+// requireAuth is an alias for authenticate per spec
+export const requireAuth = authenticate;
+
+// Helper to retrieve current user without throwing
+export function getCurrentUser(
+  request: FastifyRequest,
+): AuthenticatedRequestUser | null {
+  return request.user ?? null;
+}

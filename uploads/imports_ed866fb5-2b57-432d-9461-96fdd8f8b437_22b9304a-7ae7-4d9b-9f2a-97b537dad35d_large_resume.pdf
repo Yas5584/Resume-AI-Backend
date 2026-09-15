@@ -1,0 +1,66 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1455 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Hank Enterprise) '
+(hank@corp.com) '
+(PROFESSIONAL EXPERIENCE) '
+(Software Engineer 1 | Enterprise Corp 1 | 2021 – Present) '
+(• Spearheaded project 1 delivering measurable impact) '
+(Software Engineer 2 | Enterprise Corp 2 | 2022 – Present) '
+(• Spearheaded project 2 delivering measurable impact) '
+(Software Engineer 3 | Enterprise Corp 3 | 2023 – Present) '
+(• Spearheaded project 3 delivering measurable impact) '
+(Software Engineer 4 | Enterprise Corp 4 | 2024 – Present) '
+(• Spearheaded project 4 delivering measurable impact) '
+(Software Engineer 5 | Enterprise Corp 5 | 2025 – Present) '
+(• Spearheaded project 5 delivering measurable impact) '
+(Software Engineer 6 | Enterprise Corp 6 | 2026 – Present) '
+(• Spearheaded project 6 delivering measurable impact) '
+(Software Engineer 7 | Enterprise Corp 7 | 2027 – Present) '
+(• Spearheaded project 7 delivering measurable impact) '
+(Software Engineer 8 | Enterprise Corp 8 | 2028 – Present) '
+(• Spearheaded project 8 delivering measurable impact) '
+(KEY PROJECTS) '
+(Project Alpha 1 | Python, Docker) '
+(• Built distributed service 1) '
+(Project Alpha 2 | Python, Docker) '
+(• Built distributed service 2) '
+(Project Alpha 3 | Python, Docker) '
+(• Built distributed service 3) '
+(Project Alpha 4 | Python, Docker) '
+(• Built distributed service 4) '
+(Project Alpha 5 | Python, Docker) '
+(• Built distributed service 5) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001692 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1818
+%%EOF
