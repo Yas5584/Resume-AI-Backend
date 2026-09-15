@@ -1,15 +1,24 @@
 {
-  "name": "@resumeai/api",
+  "name": "resume-ai-backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "./src/server.ts",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "tsx src/server.ts",
+    "build": "prisma generate --schema=./packages/database/prisma/schema.prisma && tsc",
+    "postinstall": "prisma generate --schema=./packages/database/prisma/schema.prisma",
+    "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "prisma generate --schema=./packages/database/prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema=./packages/database/prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1131.0",
@@ -20,6 +29,7 @@
     "@fastify/multipart": "^8.3.0",
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/sensible": "^5.6.0",
+    "@prisma/client": "^6.4.1",
     "@resumeai/config": "*",
     "@resumeai/database": "*",
     "@resumeai/shared": "*",
@@ -44,6 +54,7 @@
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^22.13.4",
     "@types/pdf-parse": "^1.1.5",
+    "prisma": "^6.4.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
   }

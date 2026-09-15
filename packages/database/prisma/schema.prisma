@@ -1,0 +1,395 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WorkflowType {
+  CREATE_RESUME
+  JOB_TAILORING
+  RESUME_REVIEW
+}
+
+enum ImportStatus {
+  PENDING
+  EXTRACTING
+  PARSING
+  VALIDATING
+  COMPLETED
+  FAILED
+}
+
+enum JobAnalysisStatus {
+  PENDING
+  ANALYZING
+  VALIDATING
+  COMPLETED
+  FAILED
+}
+
+enum StrategyApprovalStatus {
+  DRAFT
+  REVIEWED
+  APPROVED
+}
+
+enum ContentProposalStatus {
+  DRAFT
+  PARTIALLY_ACCEPTED
+  ACCEPTED
+  REJECTED
+  STALE
+  APPLIED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  name             String
+  passwordHash     String
+  role             Role             @default(USER)
+  subscriptionTier SubscriptionTier @default(FREE)
+  creditsBalance   Int              @default(10)
+  emailVerified    DateTime?
+  image            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  resumes             Resume[]
+  jobDescriptions     JobDescription[]
+  resumeJobAnalyses   ResumeJobAnalysis[]
+  workflowRuns        AIWorkflowRun[]
+  aiUsages            AIUsage[]
+  auditLogs           AuditLog[]
+  accounts            Account[]
+  sessions            Session[]
+  resumeImports       ResumeImport[]
+  strategies          ResumeStrategy[]
+  contentProposals    ContentProposal[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?  @db.Text
+  accessToken       String?  @db.Text
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Resume {
+  id                String   @id @default(uuid())
+  userId            String
+  title             String   @default("Untitled Resume")
+  currentTemplateId String   @default("modern-standard")
+  targetRole        String?
+  resumeData        Json     // Structured data matching ResumeSchema
+  templateConfig    Json?    // Presentation configuration matching TemplateConfigSchema
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions        ResumeVersion[]
+  jobAnalyses     ResumeJobAnalysis[]
+  workflowRuns    AIWorkflowRun[]
+  resumeImport    ResumeImport?
+  jobDescriptions JobDescription[]
+  strategies      ResumeStrategy[]
+  contentProposals ContentProposal[]
+
+  @@index([userId])
+  @@map("resumes")
+}
+
+model ResumeVersion {
+  id            String   @id @default(uuid())
+  resumeId      String
+  versionNumber Int
+  title         String
+  resumeData    Json     // Snapshot of resume data for this version
+  templateConfig Json?   // Snapshot of template configuration for this version
+  changeSummary String?
+  createdAt     DateTime @default(now())
+
+  resume                  Resume              @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobAnalyses             ResumeJobAnalysis[]
+  appliedContentProposals ContentProposal[]
+
+  @@unique([resumeId, versionNumber])
+  @@index([resumeId])
+  @@map("resume_versions")
+}
+
+model JobDescription {
+  id               String            @id @default(uuid())
+  userId           String
+  company          String?
+  title            String            @default("Untitled Position")
+  rawText          String            @db.Text
+  normalizedText   String?           @db.Text
+  status           JobAnalysisStatus @default(PENDING)
+  parsedData       Json?             // Structured data matching JobAnalysisSchema
+  errorMessage     String?
+  tokensUsed       Int               @default(0)
+  processingTimeMs Int?
+  url              String?
+  resumeId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume      Resume?             @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobAnalyses ResumeJobAnalysis[]
+  strategies  ResumeStrategy[]
+  contentProposals ContentProposal[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([resumeId])
+  @@map("job_descriptions")
+}
+
+model ResumeJobAnalysis {
+  id              String    @id @default(uuid())
+  userId          String
+  resumeId        String
+  resumeVersionId String?
+  jobId           String
+  matchScore      Float
+  scoreVersion    String    @default("v1")
+  resumeUpdatedAt DateTime?
+  jobUpdatedAt    DateTime?
+  analysisData    Json      // Detailed match & gap analysis matching MatchAnalysisSchema
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume        Resume           @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resumeVersion ResumeVersion?   @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+  job           JobDescription   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  strategies    ResumeStrategy[]
+  contentProposals ContentProposal[]
+
+  @@index([userId])
+  @@index([resumeId])
+  @@index([jobId])
+  @@map("resume_job_analyses")
+}
+
+model ResumeStrategy {
+  id              String                 @id @default(uuid())
+  userId          String
+  resumeId        String
+  jobId           String
+  matchId         String?
+  strategyVersion String                 @default("v1")
+  status          StrategyApprovalStatus @default(DRAFT)
+  resumeUpdatedAt DateTime?
+  jobUpdatedAt    DateTime?
+  matchUpdatedAt  DateTime?
+  strategyData    Json                   // Structured ResumeStrategy matching ResumeStrategySchema
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume             @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  job    JobDescription     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  match  ResumeJobAnalysis? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  contentProposals ContentProposal[]
+
+  @@index([userId])
+  @@index([resumeId])
+  @@index([jobId])
+  @@index([matchId])
+  @@map("resume_strategies")
+}
+
+model ContentProposal {
+  id                String                @id @default(uuid())
+  userId            String
+  resumeId          String
+  jobId             String?
+  matchId           String?
+  strategyId        String?
+  appliedVersionId  String?
+  status            ContentProposalStatus @default(DRAFT)
+  resumeUpdatedAt   DateTime?
+  jobUpdatedAt      DateTime?
+  matchUpdatedAt    DateTime?
+  strategyUpdatedAt DateTime?
+  proposalData      Json                  // Structured ContentProposal matching ContentProposalDataSchema
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume              @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  job            JobDescription?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  match          ResumeJobAnalysis?  @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  strategy       ResumeStrategy?     @relation(fields: [strategyId], references: [id], onDelete: SetNull)
+  appliedVersion ResumeVersion?      @relation(fields: [appliedVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([resumeId])
+  @@index([jobId])
+  @@index([matchId])
+  @@index([strategyId])
+  @@index([status])
+  @@map("content_proposals")
+}
+
+model AIWorkflowRun {
+  id           String         @id @default(uuid())
+  userId       String
+  resumeId     String?
+  workflowType WorkflowType
+  status       WorkflowStatus @default(PENDING)
+  inputPayload Json           // Initial parameters & references
+  outputPayload Json?         // Resulting ResumeWorkflowState
+  errorMessage String?
+  tokensUsed   Int            @default(0)
+  costEstimate Float          @default(0.0)
+  startedAt    DateTime       @default(now())
+  completedAt  DateTime?
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume   Resume?          @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  steps    AIWorkflowStep[]
+  aiUsages AIUsage[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("ai_workflow_runs")
+}
+
+model AIWorkflowStep {
+  id            String   @id @default(uuid())
+  workflowRunId String
+  agentName     String
+  stepOrder     Int
+  status        WorkflowStatus @default(PENDING)
+  inputPayload  Json?
+  outputPayload Json?
+  tokensUsed    Int      @default(0)
+  durationMs    Int      @default(0)
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  workflowRun AIWorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+
+  @@index([workflowRunId])
+  @@map("ai_workflow_steps")
+}
+
+model AIUsage {
+  id            String   @id @default(uuid())
+  userId        String
+  workflowRunId String?
+  agentName     String
+  model         String
+  inputTokens   Int
+  outputTokens  Int
+  totalTokens   Int
+  estimatedCost Float
+  createdAt     DateTime @default(now())
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflowRun AIWorkflowRun? @relation(fields: [workflowRunId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_usages")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model ResumeImport {
+  id               String       @id @default(uuid())
+  userId           String
+  status           ImportStatus @default(PENDING)
+  originalFilename String
+  mimeType         String
+  fileSizeBytes    Int
+  storageKey       String?
+  extractedText    String?      @db.Text
+  parseConfidence  Json?
+  resumeId         String?      @unique
+  errorMessage     String?
+  errorCode        String?
+  processingTimeMs Int?
+  aiTokensUsed     Int          @default(0)
+  aiCostUsd        Float        @default(0.0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@map("resume_imports")
+}

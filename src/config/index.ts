@@ -2,9 +2,11 @@ import { z } from "zod";
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env from root if not already loaded
-dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+// Load .env from current directory first, with monorepo fallback in dev
 dotenv.config();
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+}
 
 const EnvSchema = z.object({
   NODE_ENV: z

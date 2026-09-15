@@ -1,13 +1,13 @@
 {
-  "extends": "../../packages/config/tsconfig.base.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@resumeai/shared": ["../../packages/shared/src/index.ts"],
-      "@resumeai/database": ["../../packages/database/src/index.ts"],
-      "@resumeai/config": ["../../packages/config/src/index.ts"]
+      "@resumeai/shared": ["./packages/shared/src/index.ts"],
+      "@resumeai/database": ["./packages/database/src/index.ts"],
+      "@resumeai/config": ["./packages/config/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "api/**/*"]
+  "include": ["src/**/*", "tests/**/*", "api/**/*", "packages/**/*"]
 }

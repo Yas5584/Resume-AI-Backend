@@ -1,0 +1,20 @@
+{
+  "name": "@resumeai/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@resumeai/config": "*",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}
