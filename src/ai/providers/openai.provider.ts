@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js";
 import {
   AIProvider,
   AIModelInfo,
@@ -33,7 +34,7 @@ export class OpenAIProvider implements AIProvider {
     params: StructuredOutputParams<T>,
   ): Promise<AIStructuredResponse<T>> {
     try {
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+      const messages: ChatCompletionMessageParam[] = [];
 
       if (params.systemPrompt) {
         messages.push({ role: "system", content: params.systemPrompt });
@@ -110,7 +111,7 @@ export class OpenAIProvider implements AIProvider {
 
   async generateText(params: TextGenerationParams): Promise<AITextResponse> {
     try {
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+      const messages: ChatCompletionMessageParam[] = [];
 
       if (params.systemPrompt) {
         messages.push({ role: "system", content: params.systemPrompt });

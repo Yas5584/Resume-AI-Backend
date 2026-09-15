@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js";
 import {
   AIProvider,
   AIModelInfo,
@@ -108,7 +109,7 @@ export class GroqProvider implements AIProvider {
     params: StructuredOutputParams<T>,
   ): Promise<AIStructuredResponse<T>> {
     return this.executeWithRetry(async () => {
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+      const messages: ChatCompletionMessageParam[] = [];
 
       if (params.systemPrompt) {
         messages.push({ role: "system", content: params.systemPrompt });
@@ -200,7 +201,7 @@ export class GroqProvider implements AIProvider {
 
   async generateText(params: TextGenerationParams): Promise<AITextResponse> {
     return this.executeWithRetry(async () => {
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+      const messages: ChatCompletionMessageParam[] = [];
 
       if (params.systemPrompt) {
         messages.push({ role: "system", content: params.systemPrompt });
