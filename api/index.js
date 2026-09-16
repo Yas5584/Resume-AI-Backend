@@ -2034,16 +2034,47 @@ import jwt from "jsonwebtoken";
 // packages/database/src/index.ts
 var src_exports = {};
 __export(src_exports, {
+  ContentProposalStatus: () => ContentProposalStatus,
+  ImportStatus: () => ImportStatus,
+  JobAnalysisStatus: () => JobAnalysisStatus,
+  Prisma: () => Prisma,
+  PrismaClient: () => PrismaClient,
+  Role: () => Role,
+  StrategyApprovalStatus: () => StrategyApprovalStatus,
+  SubscriptionTier: () => SubscriptionTier,
+  WorkflowStatus: () => WorkflowStatus2,
+  WorkflowType: () => WorkflowType2,
   prisma: () => prisma
 });
 
 // packages/database/src/client.ts
 var client_exports = {};
 __export(client_exports, {
+  ContentProposalStatus: () => ContentProposalStatus,
+  ImportStatus: () => ImportStatus,
+  JobAnalysisStatus: () => JobAnalysisStatus,
+  Prisma: () => Prisma,
+  PrismaClient: () => PrismaClient,
+  Role: () => Role,
+  StrategyApprovalStatus: () => StrategyApprovalStatus,
+  SubscriptionTier: () => SubscriptionTier,
+  WorkflowStatus: () => WorkflowStatus2,
+  WorkflowType: () => WorkflowType2,
   prisma: () => prisma
 });
 __reExport(client_exports, client_star);
-import { PrismaClient } from "@prisma/client";
+import {
+  PrismaClient,
+  Prisma,
+  Role,
+  SubscriptionTier,
+  WorkflowStatus as WorkflowStatus2,
+  WorkflowType as WorkflowType2,
+  ImportStatus,
+  JobAnalysisStatus,
+  StrategyApprovalStatus,
+  ContentProposalStatus
+} from "@prisma/client";
 import * as client_star from "@prisma/client";
 var prisma = globalThis.prismaGlobal ?? new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"]
@@ -9024,7 +9055,7 @@ var WorkflowRepository = class {
         userId: data.userId,
         resumeId: data.resumeId,
         workflowType: data.workflowType,
-        status: src_exports.WorkflowStatus.PENDING,
+        status: WorkflowStatus2.PENDING,
         inputPayload: data.inputPayload
       }
     });
@@ -9038,7 +9069,7 @@ var WorkflowRepository = class {
         ...errorMessage ? { errorMessage } : {},
         tokensUsed: { increment: tokensUsed },
         costEstimate: { increment: costEstimate },
-        ...status === src_exports.WorkflowStatus.COMPLETED || status === src_exports.WorkflowStatus.FAILED ? { completedAt: /* @__PURE__ */ new Date() } : {}
+        ...status === WorkflowStatus2.COMPLETED || status === WorkflowStatus2.FAILED ? { completedAt: /* @__PURE__ */ new Date() } : {}
       }
     });
   }
@@ -12257,7 +12288,7 @@ var WorkflowService = class {
       workflowId,
       userId,
       workflowType: req.workflowType,
-      status: src_exports.WorkflowStatus.PENDING,
+      status: WorkflowStatus2.PENDING,
       retryCount: 0,
       maxRetries: 3,
       resumeId: req.resumeId,
@@ -12273,7 +12304,7 @@ var WorkflowService = class {
     const resultState = await this.orchestrator.executeWorkflow(initialState);
     await this.workflowRepo.updateStatus(
       workflowRun.id,
-      src_exports.WorkflowStatus.COMPLETED,
+      WorkflowStatus2.COMPLETED,
       resultState,
       void 0,
       resultState.totalTokensUsed,
@@ -12281,7 +12312,7 @@ var WorkflowService = class {
     );
     return {
       workflowRunId: workflowRun.id,
-      status: src_exports.WorkflowStatus.COMPLETED,
+      status: WorkflowStatus2.COMPLETED,
       state: resultState
     };
   }
@@ -12395,7 +12426,7 @@ var ImportRepository = class {
     return prisma.resumeImport.create({
       data: {
         userId: data.userId,
-        status: data.status ?? src_exports.ImportStatus.PENDING,
+        status: data.status ?? ImportStatus.PENDING,
         originalFilename: data.originalFilename,
         mimeType: data.mimeType,
         fileSizeBytes: data.fileSizeBytes,
@@ -12814,7 +12845,7 @@ var ResumeImportService = class {
         });
         importRecord = await importRepository.updateStatus(
           importRecord.id,
-          src_exports.ImportStatus.PENDING,
+          ImportStatus.PENDING,
           { storageKey }
         );
       } catch {
@@ -12822,7 +12853,7 @@ var ResumeImportService = class {
       }
       importRecord = await importRepository.updateStatus(
         importRecord.id,
-        src_exports.ImportStatus.EXTRACTING
+        ImportStatus.EXTRACTING
       );
       let extracted;
       try {
@@ -12841,7 +12872,7 @@ var ResumeImportService = class {
       );
       importRecord = await importRepository.updateStatus(
         importRecord.id,
-        src_exports.ImportStatus.PARSING,
+        ImportStatus.PARSING,
         { extractedText: extracted.structuredText }
       );
       const prompt = buildResumeParserUserPrompt(extracted.structuredText);
@@ -12886,7 +12917,7 @@ var ResumeImportService = class {
       }
       importRecord = await importRepository.updateStatus(
         importRecord.id,
-        src_exports.ImportStatus.VALIDATING
+        ImportStatus.VALIDATING
       );
       let resumeData;
       const parseResult = ResumeDataSchema.safeParse(aiResult.data.resumeData);
@@ -12936,7 +12967,7 @@ var ResumeImportService = class {
       const processingTimeMs = Date.now() - startTime;
       importRecord = await importRepository.updateStatus(
         importRecord.id,
-        src_exports.ImportStatus.COMPLETED,
+        ImportStatus.COMPLETED,
         {
           resumeId: resume.id,
           parseConfidence: {
@@ -12984,7 +13015,7 @@ var ResumeImportService = class {
       try {
         await importRepository.updateStatus(
           importRecord.id,
-          src_exports.ImportStatus.FAILED,
+          ImportStatus.FAILED,
           {
             errorMessage,
             errorCode,
@@ -14149,7 +14180,7 @@ var ContentProposalRepository = class {
         jobId: data.jobId,
         matchId: data.matchId,
         strategyId: data.strategyId,
-        status: data.status || src_exports.ContentProposalStatus.DRAFT,
+        status: data.status || ContentProposalStatus.DRAFT,
         resumeUpdatedAt: data.resumeUpdatedAt,
         jobUpdatedAt: data.jobUpdatedAt,
         matchUpdatedAt: data.matchUpdatedAt,
@@ -14757,7 +14788,7 @@ var ContentWriterService = class {
       resumeId,
       jobId
     );
-    if (existingProposal && existingProposal.status !== src_exports.ContentProposalStatus.APPLIED && existingProposal.status !== src_exports.ContentProposalStatus.REJECTED) {
+    if (existingProposal && existingProposal.status !== ContentProposalStatus.APPLIED && existingProposal.status !== ContentProposalStatus.REJECTED) {
       const isResumeFresh = !existingProposal.resumeUpdatedAt || new Date(resume.updatedAt) <= new Date(existingProposal.resumeUpdatedAt);
       const isJobFresh = !existingProposal.jobUpdatedAt || new Date(job.updatedAt) <= new Date(existingProposal.jobUpdatedAt);
       if (isResumeFresh && isJobFresh) {
@@ -14821,7 +14852,7 @@ var ContentWriterService = class {
       jobId,
       matchId: matchRecord?.id,
       strategyId: strategyRecord?.id,
-      status: src_exports.ContentProposalStatus.DRAFT,
+      status: ContentProposalStatus.DRAFT,
       resumeUpdatedAt: resume.updatedAt,
       jobUpdatedAt: job.updatedAt,
       matchUpdatedAt: matchRecord?.updatedAt,
@@ -14888,7 +14919,7 @@ var ContentWriterService = class {
       matchId: record.matchId,
       strategyId: record.strategyId,
       appliedVersionId: record.appliedVersionId,
-      status: isStale && record.status === src_exports.ContentProposalStatus.DRAFT ? src_exports.ContentProposalStatus.STALE : record.status,
+      status: isStale && record.status === ContentProposalStatus.DRAFT ? ContentProposalStatus.STALE : record.status,
       isStale,
       resumeTitle: record.resume?.title,
       jobTitle: record.job?.title,
@@ -14916,7 +14947,7 @@ var ContentWriterService = class {
     if (!record) {
       throw AppError.notFound("Content proposal");
     }
-    if (record.status === src_exports.ContentProposalStatus.APPLIED) {
+    if (record.status === ContentProposalStatus.APPLIED) {
       throw AppError.badRequest(
         "Cannot modify change status on an already applied proposal."
       );
@@ -14951,11 +14982,11 @@ var ContentWriterService = class {
       (c) => c.status === "APPROVED"
     );
     const hasPending = proposalData.changes.some((c) => c.status === "PENDING");
-    let overallStatus = src_exports.ContentProposalStatus.DRAFT;
+    let overallStatus = ContentProposalStatus.DRAFT;
     if (hasApproved && hasPending) {
-      overallStatus = src_exports.ContentProposalStatus.PARTIALLY_ACCEPTED;
+      overallStatus = ContentProposalStatus.PARTIALLY_ACCEPTED;
     } else if (hasApproved && !hasPending) {
-      overallStatus = src_exports.ContentProposalStatus.ACCEPTED;
+      overallStatus = ContentProposalStatus.ACCEPTED;
     }
     await this.proposalRepo.update(proposalId, userId, {
       status: overallStatus,
@@ -14997,7 +15028,7 @@ var ContentWriterService = class {
     const updated = await this.proposalRepo.update(proposalId, userId, {
       resumeUpdatedAt: resume.updatedAt,
       proposalData,
-      status: src_exports.ContentProposalStatus.DRAFT
+      status: ContentProposalStatus.DRAFT
     });
     return {
       id: updated?.id,
@@ -15018,7 +15049,7 @@ var ContentWriterService = class {
     if (!proposal) {
       throw AppError.notFound("Content proposal");
     }
-    if (proposal.status === src_exports.ContentProposalStatus.APPLIED) {
+    if (proposal.status === ContentProposalStatus.APPLIED) {
       throw AppError.badRequest("This proposal has already been applied.");
     }
     const resume = await this.resumeRepo.findByIdAndUserId(
@@ -15109,7 +15140,7 @@ var ContentWriterService = class {
       const updatedProposal = await tx.contentProposal.update({
         where: { id: proposal.id },
         data: {
-          status: src_exports.ContentProposalStatus.APPLIED,
+          status: ContentProposalStatus.APPLIED,
           appliedVersionId: snapshotVersion.id
         }
       });
@@ -15415,7 +15446,7 @@ MANDATORY SELF-HEALING RULES FOR RETRY:
       userId,
       resumeId: resume.id,
       jobId: input.targetJobId || null,
-      status: src_exports.ContentProposalStatus.DRAFT,
+      status: ContentProposalStatus.DRAFT,
       resumeUpdatedAt: resume.updatedAt,
       jobUpdatedAt: input.targetJobId ? /* @__PURE__ */ new Date() : null,
       proposalData
@@ -15459,9 +15490,9 @@ MANDATORY SELF-HEALING RULES FOR RETRY:
       throw AppError.notFound("Content proposal");
     }
     await this.proposalRepo.update(proposalId, userId, {
-      status: src_exports.ContentProposalStatus.REJECTED
+      status: ContentProposalStatus.REJECTED
     });
-    return { success: true, status: src_exports.ContentProposalStatus.REJECTED };
+    return { success: true, status: ContentProposalStatus.REJECTED };
   }
   /**
    * Deletes proposal

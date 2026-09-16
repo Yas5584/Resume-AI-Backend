@@ -1,4 +1,15 @@
-import { PrismaClient } from "@prisma/client";
+import {
+  PrismaClient,
+  Prisma,
+  Role,
+  SubscriptionTier,
+  WorkflowStatus,
+  WorkflowType,
+  ImportStatus,
+  JobAnalysisStatus,
+  StrategyApprovalStatus,
+  ContentProposalStatus,
+} from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -15,6 +26,16 @@ export const prisma =
 // on globalThis across warm invocations to avoid exhausting database connection pools.
 globalThis.prismaGlobal = prisma;
 
-
-export type { PrismaClient } from "@prisma/client";
+export {
+  PrismaClient,
+  Prisma,
+  Role,
+  SubscriptionTier,
+  WorkflowStatus,
+  WorkflowType,
+  ImportStatus,
+  JobAnalysisStatus,
+  StrategyApprovalStatus,
+  ContentProposalStatus,
+};
 export * from "@prisma/client";
