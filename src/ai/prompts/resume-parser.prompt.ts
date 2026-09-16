@@ -46,29 +46,136 @@ OUTPUT REQUIREMENTS:
 - Output ONLY valid JSON conforming to the ResumeParseResultSchema.
 - The "resumeData" field must conform to the ResumeData schema structure.
 - The "confidence" field must contain per-section confidence scores.
-- The "warnings" array should list any extraction ambiguities encountered.`;
+- The "warnings" array should list any extraction ambiguities encountered.
+
+CRITICAL STRUCTURAL CONSTRAINTS:
+- NEVER output stringified JSON inside arrays. All array items must be direct JSON objects.
+- NEVER put section names (like "education", "projects", "skills", "certifications", "languages", "links") or colons ":" as items inside the "experience" array!
+- Every section MUST be an independent top-level key under "resumeData".
+- Do NOT generate empty dummy objects (e.g. objects with empty jobTitle or company).
+- Always extract all sections present in the resume text.`;
 
 export function buildResumeParserUserPrompt(structuredText: string): string {
   return `Parse the following resume text completely across all pages into structured JSON data.
 
-Extract all available information and map it to the ResumeParseResultSchema.
+Extract all available information and map it to the exact JSON structure below.
 
 <RESUME_TEXT>
 ${structuredText}
 </RESUME_TEXT>
 
-Output a JSON object with three top-level keys:
-1. "resumeData" — the extracted resume data conforming to ResumeData schema, containing:
-   - personalInfo: { fullName, headline, email, phone, location, website, linkedin, github, linkedinUrl, githubUrl, portfolioUrl }
-   - summary: string (professional summary or objective)
-   - experience: array of { jobTitle, company, location, employmentType, startDate, endDate, current, description, bullets, technologiesUsed }
-   - education: array of { institution, degree, fieldOfStudy, location, startDate, endDate, current, gpa, description, honors }
-   - projects: array of { name, description, role, technologies, startDate, endDate, url, repoUrl, bullets, highlights }
-   - skills: array of { category, skills } where skills is string array
-   - certifications: array of { name, issuer, issueDate, expirationDate, credentialId, url }
-   - achievements: array of { title, description, date }
-   - languages: array of { language, proficiency } where proficiency is one of: Basic, Conversational, Professional, Fluent, Native
-   - links: array of { label, url }
-2. "confidence" — per-section confidence scores (0.0-1.0): { personalInfo, summary, experience, education, skills, projects, certifications, achievements, languages, links, overall }
-3. "warnings" — array of strings describing any extraction issues or ambiguities`;
+OUTPUT FORMAT:
+Output ONLY a JSON object with this exact structure:
+{
+  "resumeData": {
+    "personalInfo": {
+      "fullName": "Candidate Full Name",
+      "headline": "Current Title / Headline",
+      "email": "email@example.com",
+      "phone": "+1234567890",
+      "location": "City, State, Country",
+      "website": "https://...",
+      "linkedin": "https://linkedin.com/in/...",
+      "github": "https://github.com/...",
+      "linkedinUrl": "https://linkedin.com/in/...",
+      "githubUrl": "https://github.com/...",
+      "portfolioUrl": "https://..."
+    },
+    "summary": "Professional summary paragraph...",
+    "experience": [
+      {
+        "jobTitle": "Job Title",
+        "company": "Company Name",
+        "location": "City, Country",
+        "employmentType": "Full-time",
+        "startDate": "Month Year",
+        "endDate": "Month Year or empty if current",
+        "current": false,
+        "description": "Role overview...",
+        "bullets": [
+          "Accomplishment or responsibility bullet 1",
+          "Accomplishment or responsibility bullet 2"
+        ],
+        "technologiesUsed": ["Skill1", "Skill2"]
+      }
+    ],
+    "education": [
+      {
+        "institution": "University or School Name",
+        "degree": "Degree (e.g. B.Tech, B.S., M.S.)",
+        "fieldOfStudy": "Major / Field of Study",
+        "location": "City, Country",
+        "startDate": "Year",
+        "endDate": "Year",
+        "current": false,
+        "gpa": "GPA / Grade if present",
+        "description": "",
+        "honors": []
+      }
+    ],
+    "projects": [
+      {
+        "name": "Project Name",
+        "description": "Project summary description",
+        "role": "",
+        "technologies": ["Tech1", "Tech2"],
+        "startDate": "",
+        "endDate": "",
+        "url": "",
+        "repoUrl": "",
+        "bullets": ["Project bullet 1", "Project bullet 2"],
+        "highlights": []
+      }
+    ],
+    "skills": [
+      {
+        "category": "Category Name (e.g. Programming, Tools, Frontend, AI/ML)",
+        "skills": ["Skill1", "Skill2", "Skill3"]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Certification Name",
+        "issuer": "Issuing Org",
+        "issueDate": "",
+        "expirationDate": "",
+        "credentialId": "",
+        "url": ""
+      }
+    ],
+    "achievements": [
+      {
+        "title": "Achievement Title",
+        "description": "Details",
+        "date": ""
+      }
+    ],
+    "languages": [
+      {
+        "language": "Language",
+        "proficiency": "Professional"
+      }
+    ],
+    "links": [
+      {
+        "label": "Link Title",
+        "url": "https://..."
+      }
+    ]
+  },
+  "confidence": {
+    "personalInfo": 1.0,
+    "summary": 1.0,
+    "experience": 1.0,
+    "education": 1.0,
+    "skills": 1.0,
+    "projects": 1.0,
+    "certifications": 1.0,
+    "achievements": 1.0,
+    "languages": 1.0,
+    "links": 1.0,
+    "overall": 1.0
+  },
+  "warnings": []
+}`;
 }

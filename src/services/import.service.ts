@@ -234,6 +234,91 @@ export class ResumeImportService {
         resumeData = fallbackResult.resumeData;
       }
 
+      // Clean up experience array from any corrupted/dummy entries
+      if (Array.isArray(resumeData.experience)) {
+        resumeData.experience = resumeData.experience.filter((exp: any) => {
+          if (!exp || typeof exp !== "object") return false;
+          const title = String(exp.jobTitle || "").trim();
+          const company = String(exp.company || "").trim();
+          const desc = String(exp.description || "").trim();
+          const bullets = Array.isArray(exp.bullets) ? exp.bullets.filter(Boolean) : [];
+          // Drop section headers
+          if (/^(education|projects?|skills?|technical\s*skills|certifications?|achievements?|languages?|links?|experience|[:;,\-–—|•*#\s]+)$/i.test(title)) {
+            return false;
+          }
+          // Drop empty dummy entries
+          if ((!title || title === "Role") && (!company || company === "Company") && !desc && bullets.length === 0) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      // Self-Healing Guardrail:
+      // If AI omitted or dropped sections that clearly exist in the source text,
+      // reconcile and heal them using the high-fidelity deterministic parser.
+      const textLower = extracted.rawText.toLowerCase();
+      let deterministicFallback: any = null;
+      const getFallback = () => {
+        if (!deterministicFallback) {
+          deterministicFallback = parseResumeFromText(extracted.structuredText);
+        }
+        return deterministicFallback;
+      };
+
+      // 1. Heal Education
+      const hasEduInDoc = /(?:education|academic|b\.?tech|m\.?tech|bachelor|master|degree|university|college)\b/i.test(textLower);
+      if (
+        hasEduInDoc &&
+        (!resumeData.education || resumeData.education.length === 0)
+      ) {
+        const fb = getFallback();
+        if (fb.resumeData.education?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty education section from deterministic parser");
+          resumeData.education = fb.resumeData.education;
+        }
+      }
+
+      // 2. Heal Projects
+      const hasProjInDoc = /(?:projects?|portfolio)\b/i.test(textLower);
+      if (
+        hasProjInDoc &&
+        (!resumeData.projects || resumeData.projects.length === 0)
+      ) {
+        const fb = getFallback();
+        if (fb.resumeData.projects?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty projects section from deterministic parser");
+          resumeData.projects = fb.resumeData.projects;
+        }
+      }
+
+      // 3. Heal Skills
+      const hasSkillsInDoc = /(?:skills?|competencies|technologies)\b/i.test(textLower);
+      const totalParsedSkills = (resumeData.skills || []).reduce(
+        (sum: number, g: any) => sum + (g.skills?.length || 0),
+        0,
+      );
+      if (hasSkillsInDoc && totalParsedSkills === 0) {
+        const fb = getFallback();
+        if (fb.resumeData.skills?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty skills section from deterministic parser");
+          resumeData.skills = fb.resumeData.skills;
+        }
+      }
+
+      // 4. Heal Experience
+      const hasExpInDoc = /(?:experience|employment|work history)\b/i.test(textLower);
+      if (
+        hasExpInDoc &&
+        (!resumeData.experience || resumeData.experience.length === 0)
+      ) {
+        const fb = getFallback();
+        if (fb.resumeData.experience?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty experience section from deterministic parser");
+          resumeData.experience = fb.resumeData.experience;
+        }
+      }
+
       // 13. Post-Parse Completeness Validation
       const parserWarnings = validateParseCompleteness(
         extracted.rawText,

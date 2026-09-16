@@ -78,10 +78,33 @@ const ResumeParseResultObjectSchema = z.object({
 
 export type ResumeParseResult = z.infer<typeof ResumeParseResultObjectSchema>;
 
-export const ResumeParseResultSchema: z.ZodType<ResumeParseResult, z.ZodTypeDef, any> = z.preprocess((val: any) => {
-  if (!val || typeof val !== "object") return { resumeData: {} };
+export const ResumeParseResultSchema: z.ZodType<ResumeParseResult, z.ZodTypeDef, any> = z.preprocess((rawVal: any) => {
+  let val = rawVal;
+  if (!val) return { resumeData: {} };
+  if (typeof val === "string") {
+    try {
+      val = JSON.parse(val);
+    } catch {
+      return { resumeData: {} };
+    }
+  }
+  if (Array.isArray(val)) {
+    if (val.length === 1 && val[0]?.resumeData) {
+      return val[0];
+    }
+    const merged = Object.assign({}, ...val.filter((v: any) => v && typeof v === "object"));
+    if (merged.resumeData) {
+      return merged;
+    }
+    return {
+      resumeData: merged,
+      confidence: merged.confidence || {},
+      warnings: Array.isArray(merged.warnings) ? merged.warnings : [],
+    };
+  }
+  if (typeof val !== "object") return { resumeData: {} };
   // If the LLM returned resumeData directly at the root
-  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary)) {
+  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary || val.projects)) {
     return {
       resumeData: val,
       confidence: val.confidence || {},

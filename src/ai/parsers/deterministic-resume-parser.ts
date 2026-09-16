@@ -15,8 +15,9 @@ import { ResumeParseResult, ResumeParseResultSchema } from "@resumeai/shared";
  * - Prompt injection resilience (treats adversarial instructions as text)
  */
 export function parseResumeFromText(rawText: string): ResumeParseResult {
+  const safeText = rawText || "";
   // Strip page tags for line splitting while preserving content
-  let cleanedText = rawText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
+  let cleanedText = safeText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
   // Unescape markdown backslash escapes from mammoth/docx: \., \-, \*, \[, \], \(, \), \_
   cleanedText = cleanedText.replace(/\\([.\-*_\[\]\(\)\\])/g, "$1");
   // Normalize UTF-8 moji-bake encoding artifacts from raw PDF Type1 font streams
@@ -408,7 +409,11 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
         let jobTitle = textWithoutDate || "Professional";
         let company = "Company";
 
-        if (textWithoutDate.includes(" at ")) {
+        if (textWithoutDate.includes("•")) {
+          const parts = textWithoutDate.split("•");
+          jobTitle = parts[0].trim();
+          company = parts.slice(1).join(" ").trim() || "Company";
+        } else if (textWithoutDate.includes(" at ")) {
           const splitAt = textWithoutDate.split(" at ");
           jobTitle = splitAt[0].trim();
           company = splitAt[1].trim();
@@ -527,14 +532,19 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
       const isBullet = isBulletLine(line);
       const isFollowedByBullet =
         i + 1 < projLines.length && isBulletLine(projLines[i + 1]);
+      const isFollowedByTools =
+        i + 1 < projLines.length &&
+        /^(?:tools|tech|technologies|tech\s*stack):/i.test(projLines[i + 1]);
+      const isEmailOrUrlOnly = /^\[Link\]\(mailto:|^https?:\/\//i.test(line);
 
-      // Detect project heading: Name | Techs or Name (Techs) or ### Name or Line followed by bullet
+      // Detect project heading: Name | Techs or Name (Techs) or ### Name or Line followed by bullet or Tools:
       const isHeading =
         !isBullet &&
+        !isEmailOrUrlOnly &&
         (line.includes("|") ||
           /^#{2,4}\s+/.test(line) ||
-          (line.includes("[") && line.includes("]")) ||
-          (line.length < 80 && !line.endsWith(".") && isFollowedByBullet) ||
+          (line.includes("[") && line.includes("]") && !line.includes("mailto:")) ||
+          (line.length < 80 && !line.endsWith(".") && (isFollowedByBullet || isFollowedByTools)) ||
           (line.length < 80 &&
             !line.endsWith(".") &&
             (line.includes("(") ||
@@ -623,10 +633,11 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
       } else if (currentProj) {
         if (
           line.toLowerCase().startsWith("technologies:") ||
-          line.toLowerCase().startsWith("tech stack:")
+          line.toLowerCase().startsWith("tech stack:") ||
+          line.toLowerCase().startsWith("tools:")
         ) {
           const techs = line
-            .replace(/^(technologies|tech stack):\s*/i, "")
+            .replace(/^(technologies|tech stack|tools):\s*/i, "")
             .split(/[,•;]/)
             .map((t) => t.trim())
             .filter(Boolean);
@@ -740,7 +751,17 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
         )
       ) {
         if (currentEdu) education.push(currentEdu);
-        let degree = line;
+        let degreeLine = line;
+        let startDate = "";
+        let endDate = "";
+        const dateMatch = degreeLine.match(DATE_RANGE_REGEX);
+        if (dateMatch) {
+          startDate = dateMatch[1];
+          endDate = /present|current|now/i.test(dateMatch[2]) ? "" : dateMatch[2];
+          degreeLine = degreeLine.replace(DATE_RANGE_REGEX, "").trim();
+        }
+
+        let degree = degreeLine;
         let fieldOfStudy = "";
         if (degree.toLowerCase().includes(" in ")) {
           const degParts = degree.split(/ in /i);
@@ -753,8 +774,8 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
           degree,
           fieldOfStudy,
           location: "",
-          startDate: "",
-          endDate: "",
+          startDate,
+          endDate,
           current: false,
           gpa: "",
           description: "",
@@ -767,8 +788,21 @@ export function parseResumeFromText(rawText: string): ResumeParseResult {
         if (gpaMatch && currentEdu) {
           currentEdu.gpa = gpaMatch[1];
         }
-      } else if (currentEdu && !currentEdu.institution && !line.includes("@")) {
-        currentEdu.institution = line;
+        if (currentEdu && (currentEdu.institution === "University" || !currentEdu.institution)) {
+          const instText = line
+            .replace(/•?\s*(?:cgpa|gpa)\s*[:\-]?\s*[0-9.]+(?:\s*\/\s*[0-9.]+)?/i, "")
+            .replace(/^•|•$/g, "")
+            .trim();
+          if (instText && !instText.includes("@")) {
+            currentEdu.institution = instText;
+          }
+        }
+      } else if (
+        currentEdu &&
+        (currentEdu.institution === "University" || !currentEdu.institution) &&
+        !line.includes("@")
+      ) {
+        currentEdu.institution = line.trim();
       }
     }
     if (currentEdu) education.push(currentEdu);

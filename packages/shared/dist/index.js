@@ -112,25 +112,104 @@ var StringArraySchema = z.preprocess((val) => {
   if (Array.isArray(val)) return val.map((item) => typeof item === "string" ? item : JSON.stringify(item));
   return [];
 }, z.array(z.string()).default([]));
-var ensureArray = (itemSchema) => z.preprocess((val) => {
+var SECTION_NOISE_REGEX = /^(education|projects?|skills?|technical\s*skills|certifications?|achievements?|languages?|links?|experience|work\s*experience|professional\s*experience|summary|professional\s*summary|personal\s*info|contact|interests|awards|references|competencies|technologies|[:;,\-–—|•*#\s]+)$/i;
+function tryParseJsonObject(val) {
+  if (typeof val !== "string") return val;
+  const trimmed = val.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return val;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+      } catch {
+      }
+    }
+  }
+  return val;
+}
+function isDummyExperience(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const title = String(obj.jobTitle || obj.position || obj.title || obj.role || "").trim();
+  const company = String(obj.company || obj.organization || obj.employer || "").trim();
+  const desc = String(obj.description || "").trim();
+  const bullets = Array.isArray(obj.bullets) ? obj.bullets.filter(Boolean) : [];
+  const start = String(obj.startDate || "").trim();
+  if (SECTION_NOISE_REGEX.test(title)) return true;
+  if ((!title || title === "Role") && (!company || company === "Company") && !desc && bullets.length === 0 && !start) {
+    return true;
+  }
+  return false;
+}
+function isDummyEducation(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const inst = String(obj.institution || obj.school || obj.university || "").trim();
+  const deg = String(obj.degree || obj.qualification || "").trim();
+  const field = String(obj.fieldOfStudy || "").trim();
+  const desc = String(obj.description || "").trim();
+  const start = String(obj.startDate || "").trim();
+  if (SECTION_NOISE_REGEX.test(inst)) return true;
+  if ((!inst || inst === "Institution") && (!deg || deg === "Degree") && !field && !desc && !start) {
+    return true;
+  }
+  return false;
+}
+function isDummyProject(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const name = String(obj.name || obj.title || "").trim();
+  const desc = String(obj.description || "").trim();
+  const bullets = Array.isArray(obj.bullets) ? obj.bullets.filter(Boolean) : [];
+  const techs = Array.isArray(obj.technologies) ? obj.technologies.filter(Boolean) : [];
+  if (SECTION_NOISE_REGEX.test(name)) return true;
+  if ((!name || name === "Project") && !desc && bullets.length === 0 && techs.length === 0) {
+    return true;
+  }
+  return false;
+}
+var ensureArray = (itemSchema, isDummyItem) => z.preprocess((val) => {
   if (val === null || val === void 0) return [];
-  if (Array.isArray(val)) return val;
-  return [val];
+  let rawArr = Array.isArray(val) ? val : [val];
+  rawArr = rawArr.flat(2);
+  const cleaned = [];
+  for (let item of rawArr) {
+    if (item === null || item === void 0 || item === "") continue;
+    item = tryParseJsonObject(item);
+    if (typeof item === "string") {
+      const trimmed = item.trim();
+      if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) continue;
+    }
+    if (item && typeof item === "object" && isDummyItem && isDummyItem(item)) {
+      continue;
+    }
+    cleaned.push(item);
+  }
+  return cleaned;
 }, z.array(itemSchema).default([]));
-var WorkExperienceSchema = z.preprocess((val) => {
+var WorkExperienceSchema = z.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      jobTitle: val.slice(0, 100),
+      jobTitle: trimmed.slice(0, 100),
       company: "Company",
-      description: val,
-      bullets: [val]
+      description: trimmed,
+      bullets: [trimmed]
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    const title = obj.jobTitle || obj.position || obj.title || obj.role || "Role";
-    obj.jobTitle = title;
-    obj.position = obj.position || title;
+    const title = (obj.jobTitle || obj.position || obj.title || obj.role || "").trim();
+    if (SECTION_NOISE_REGEX.test(title)) {
+      return null;
+    }
+    obj.jobTitle = title || "Role";
+    obj.position = obj.position || obj.jobTitle;
     if (!obj.company && (obj.organization || obj.employer)) {
       obj.company = obj.organization || obj.employer;
     }
@@ -151,18 +230,27 @@ var WorkExperienceSchema = z.preprocess((val) => {
   bullets: StringArraySchema,
   technologiesUsed: StringArraySchema
 }));
-var EducationSchema = z.preprocess((val) => {
+var EducationSchema = z.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      institution: val,
+      institution: trimmed,
       degree: "Degree",
-      description: val
+      description: trimmed
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    if (!obj.institution && (obj.school || obj.university || obj.college)) {
-      obj.institution = obj.school || obj.university || obj.college;
+    const inst = (obj.institution || obj.school || obj.university || obj.college || "").trim();
+    if (SECTION_NOISE_REGEX.test(inst)) {
+      return null;
+    }
+    if (!obj.institution && inst) {
+      obj.institution = inst;
     }
     if (!obj.degree && (obj.qualification || obj.studyField || obj.program)) {
       obj.degree = obj.qualification || obj.studyField || obj.program;
@@ -183,18 +271,27 @@ var EducationSchema = z.preprocess((val) => {
   description: z.preprocess((v) => v === null || v === void 0 ? "" : String(v), z.string().optional().default("")),
   honors: StringArraySchema
 }));
-var ProjectSchema = z.preprocess((val) => {
+var ProjectSchema = z.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      name: val.slice(0, 100),
-      description: val,
-      bullets: [val]
+      name: trimmed.slice(0, 100),
+      description: trimmed,
+      bullets: [trimmed]
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    if (!obj.name && (obj.title || obj.projectName)) {
-      obj.name = obj.title || obj.projectName;
+    const name = (obj.name || obj.title || obj.projectName || "").trim();
+    if (SECTION_NOISE_REGEX.test(name)) {
+      return null;
+    }
+    if (!obj.name && name) {
+      obj.name = name;
     }
     return obj;
   }
@@ -212,11 +309,16 @@ var ProjectSchema = z.preprocess((val) => {
   bullets: StringArraySchema,
   highlights: StringArraySchema
 }));
-var SkillCategorySchema = z.preprocess((val) => {
+var SkillCategorySchema = z.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 2) {
+      return null;
+    }
     return {
       category: "Skills",
-      skills: [val]
+      skills: [trimmed]
     };
   }
   if (val && typeof val === "object") {
@@ -232,15 +334,24 @@ var SkillCategorySchema = z.preprocess((val) => {
   category: z.preprocess((v) => v === null || v === void 0 ? "Skills" : String(v), z.string().default("Skills")),
   skills: StringArraySchema
 }));
-var SkillsArraySchema = z.preprocess((val) => {
-  if (!val) return [];
+var SkillsArraySchema = z.preprocess((rawVal) => {
+  if (!rawVal) return [];
+  const val = tryParseJsonObject(rawVal);
+  if (typeof val === "string") {
+    const parts = val.split(/[,;\n]+/).map((s) => s.trim()).filter((s) => s && !SECTION_NOISE_REGEX.test(s));
+    if (parts.length > 0) {
+      return [{ category: "Skills", skills: parts }];
+    }
+    return [];
+  }
   if (Array.isArray(val)) {
     if (val.length > 0 && typeof val[0] === "string") {
-      return [{ category: "Skills", skills: val }];
+      const parts = val.map((s) => String(s).trim()).filter((s) => s && !SECTION_NOISE_REGEX.test(s));
+      return [{ category: "Skills", skills: parts }];
     }
     return val;
   }
-  if (typeof val === "object") {
+  if (val && typeof val === "object") {
     return Object.entries(val).map(([cat, sks]) => ({
       category: cat,
       skills: Array.isArray(sks) ? sks : [String(sks)]
@@ -377,9 +488,9 @@ var DEFAULT_SECTION_ORDER = [
 var ResumeDataSchema = z.object({
   personalInfo: PersonalInfoSchema.default({}),
   summary: z.preprocess((v) => v === null || v === void 0 ? "" : String(v), z.string().default("")),
-  experience: ensureArray(WorkExperienceSchema),
-  education: ensureArray(EducationSchema),
-  projects: ensureArray(ProjectSchema),
+  experience: ensureArray(WorkExperienceSchema, isDummyExperience),
+  education: ensureArray(EducationSchema, isDummyEducation),
+  projects: ensureArray(ProjectSchema, isDummyProject),
   skills: SkillsArraySchema,
   certifications: ensureArray(CertificationSchema),
   achievements: ensureArray(AchievementSchema),
@@ -1205,9 +1316,32 @@ var ResumeParseResultObjectSchema = z8.object({
     return [];
   }, z8.array(z8.string()).default([]))
 });
-var ResumeParseResultSchema = z8.preprocess((val) => {
-  if (!val || typeof val !== "object") return { resumeData: {} };
-  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary)) {
+var ResumeParseResultSchema = z8.preprocess((rawVal) => {
+  let val = rawVal;
+  if (!val) return { resumeData: {} };
+  if (typeof val === "string") {
+    try {
+      val = JSON.parse(val);
+    } catch {
+      return { resumeData: {} };
+    }
+  }
+  if (Array.isArray(val)) {
+    if (val.length === 1 && val[0]?.resumeData) {
+      return val[0];
+    }
+    const merged = Object.assign({}, ...val.filter((v) => v && typeof v === "object"));
+    if (merged.resumeData) {
+      return merged;
+    }
+    return {
+      resumeData: merged,
+      confidence: merged.confidence || {},
+      warnings: Array.isArray(merged.warnings) ? merged.warnings : []
+    };
+  }
+  if (typeof val !== "object") return { resumeData: {} };
+  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary || val.projects)) {
     return {
       resumeData: val,
       confidence: val.confidence || {},
@@ -1918,6 +2052,7 @@ export {
   RevisionHistoryItemSchema,
   RiskFlagSchema,
   RiskFlagTypeEnum,
+  SECTION_NOISE_REGEX,
   SafeUrlSchema,
   SectionActionItemSchema,
   SectionPriorityEnum,
@@ -1956,5 +2091,9 @@ export {
   getDefaultTemplateConfig,
   getMatchScoreLabel,
   getSafeRedirect,
-  normalizeTemplateId
+  isDummyEducation,
+  isDummyExperience,
+  isDummyProject,
+  normalizeTemplateId,
+  tryParseJsonObject
 };

@@ -338,25 +338,104 @@ var StringArraySchema = z2.preprocess((val) => {
   if (Array.isArray(val)) return val.map((item) => typeof item === "string" ? item : JSON.stringify(item));
   return [];
 }, z2.array(z2.string()).default([]));
-var ensureArray = (itemSchema) => z2.preprocess((val) => {
+var SECTION_NOISE_REGEX = /^(education|projects?|skills?|technical\s*skills|certifications?|achievements?|languages?|links?|experience|work\s*experience|professional\s*experience|summary|professional\s*summary|personal\s*info|contact|interests|awards|references|competencies|technologies|[:;,\-–—|•*#\s]+)$/i;
+function tryParseJsonObject(val) {
+  if (typeof val !== "string") return val;
+  const trimmed = val.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return val;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+      } catch {
+      }
+    }
+  }
+  return val;
+}
+function isDummyExperience(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const title = String(obj.jobTitle || obj.position || obj.title || obj.role || "").trim();
+  const company = String(obj.company || obj.organization || obj.employer || "").trim();
+  const desc = String(obj.description || "").trim();
+  const bullets = Array.isArray(obj.bullets) ? obj.bullets.filter(Boolean) : [];
+  const start = String(obj.startDate || "").trim();
+  if (SECTION_NOISE_REGEX.test(title)) return true;
+  if ((!title || title === "Role") && (!company || company === "Company") && !desc && bullets.length === 0 && !start) {
+    return true;
+  }
+  return false;
+}
+function isDummyEducation(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const inst = String(obj.institution || obj.school || obj.university || "").trim();
+  const deg = String(obj.degree || obj.qualification || "").trim();
+  const field = String(obj.fieldOfStudy || "").trim();
+  const desc = String(obj.description || "").trim();
+  const start = String(obj.startDate || "").trim();
+  if (SECTION_NOISE_REGEX.test(inst)) return true;
+  if ((!inst || inst === "Institution") && (!deg || deg === "Degree") && !field && !desc && !start) {
+    return true;
+  }
+  return false;
+}
+function isDummyProject(obj) {
+  if (!obj || typeof obj !== "object") return true;
+  const name = String(obj.name || obj.title || "").trim();
+  const desc = String(obj.description || "").trim();
+  const bullets = Array.isArray(obj.bullets) ? obj.bullets.filter(Boolean) : [];
+  const techs = Array.isArray(obj.technologies) ? obj.technologies.filter(Boolean) : [];
+  if (SECTION_NOISE_REGEX.test(name)) return true;
+  if ((!name || name === "Project") && !desc && bullets.length === 0 && techs.length === 0) {
+    return true;
+  }
+  return false;
+}
+var ensureArray = (itemSchema, isDummyItem) => z2.preprocess((val) => {
   if (val === null || val === void 0) return [];
-  if (Array.isArray(val)) return val;
-  return [val];
+  let rawArr = Array.isArray(val) ? val : [val];
+  rawArr = rawArr.flat(2);
+  const cleaned = [];
+  for (let item of rawArr) {
+    if (item === null || item === void 0 || item === "") continue;
+    item = tryParseJsonObject(item);
+    if (typeof item === "string") {
+      const trimmed = item.trim();
+      if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) continue;
+    }
+    if (item && typeof item === "object" && isDummyItem && isDummyItem(item)) {
+      continue;
+    }
+    cleaned.push(item);
+  }
+  return cleaned;
 }, z2.array(itemSchema).default([]));
-var WorkExperienceSchema = z2.preprocess((val) => {
+var WorkExperienceSchema = z2.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      jobTitle: val.slice(0, 100),
+      jobTitle: trimmed.slice(0, 100),
       company: "Company",
-      description: val,
-      bullets: [val]
+      description: trimmed,
+      bullets: [trimmed]
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    const title = obj.jobTitle || obj.position || obj.title || obj.role || "Role";
-    obj.jobTitle = title;
-    obj.position = obj.position || title;
+    const title = (obj.jobTitle || obj.position || obj.title || obj.role || "").trim();
+    if (SECTION_NOISE_REGEX.test(title)) {
+      return null;
+    }
+    obj.jobTitle = title || "Role";
+    obj.position = obj.position || obj.jobTitle;
     if (!obj.company && (obj.organization || obj.employer)) {
       obj.company = obj.organization || obj.employer;
     }
@@ -377,18 +456,27 @@ var WorkExperienceSchema = z2.preprocess((val) => {
   bullets: StringArraySchema,
   technologiesUsed: StringArraySchema
 }));
-var EducationSchema = z2.preprocess((val) => {
+var EducationSchema = z2.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      institution: val,
+      institution: trimmed,
       degree: "Degree",
-      description: val
+      description: trimmed
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    if (!obj.institution && (obj.school || obj.university || obj.college)) {
-      obj.institution = obj.school || obj.university || obj.college;
+    const inst = (obj.institution || obj.school || obj.university || obj.college || "").trim();
+    if (SECTION_NOISE_REGEX.test(inst)) {
+      return null;
+    }
+    if (!obj.institution && inst) {
+      obj.institution = inst;
     }
     if (!obj.degree && (obj.qualification || obj.studyField || obj.program)) {
       obj.degree = obj.qualification || obj.studyField || obj.program;
@@ -409,18 +497,27 @@ var EducationSchema = z2.preprocess((val) => {
   description: z2.preprocess((v) => v === null || v === void 0 ? "" : String(v), z2.string().optional().default("")),
   honors: StringArraySchema
 }));
-var ProjectSchema = z2.preprocess((val) => {
+var ProjectSchema = z2.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 3) {
+      return null;
+    }
     return {
-      name: val.slice(0, 100),
-      description: val,
-      bullets: [val]
+      name: trimmed.slice(0, 100),
+      description: trimmed,
+      bullets: [trimmed]
     };
   }
   if (val && typeof val === "object") {
     const obj = { ...val };
-    if (!obj.name && (obj.title || obj.projectName)) {
-      obj.name = obj.title || obj.projectName;
+    const name = (obj.name || obj.title || obj.projectName || "").trim();
+    if (SECTION_NOISE_REGEX.test(name)) {
+      return null;
+    }
+    if (!obj.name && name) {
+      obj.name = name;
     }
     return obj;
   }
@@ -438,11 +535,16 @@ var ProjectSchema = z2.preprocess((val) => {
   bullets: StringArraySchema,
   highlights: StringArraySchema
 }));
-var SkillCategorySchema = z2.preprocess((val) => {
+var SkillCategorySchema = z2.preprocess((rawVal) => {
+  const val = tryParseJsonObject(rawVal);
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (SECTION_NOISE_REGEX.test(trimmed) || trimmed.length < 2) {
+      return null;
+    }
     return {
       category: "Skills",
-      skills: [val]
+      skills: [trimmed]
     };
   }
   if (val && typeof val === "object") {
@@ -458,15 +560,24 @@ var SkillCategorySchema = z2.preprocess((val) => {
   category: z2.preprocess((v) => v === null || v === void 0 ? "Skills" : String(v), z2.string().default("Skills")),
   skills: StringArraySchema
 }));
-var SkillsArraySchema = z2.preprocess((val) => {
-  if (!val) return [];
+var SkillsArraySchema = z2.preprocess((rawVal) => {
+  if (!rawVal) return [];
+  const val = tryParseJsonObject(rawVal);
+  if (typeof val === "string") {
+    const parts = val.split(/[,;\n]+/).map((s) => s.trim()).filter((s) => s && !SECTION_NOISE_REGEX.test(s));
+    if (parts.length > 0) {
+      return [{ category: "Skills", skills: parts }];
+    }
+    return [];
+  }
   if (Array.isArray(val)) {
     if (val.length > 0 && typeof val[0] === "string") {
-      return [{ category: "Skills", skills: val }];
+      const parts = val.map((s) => String(s).trim()).filter((s) => s && !SECTION_NOISE_REGEX.test(s));
+      return [{ category: "Skills", skills: parts }];
     }
     return val;
   }
-  if (typeof val === "object") {
+  if (val && typeof val === "object") {
     return Object.entries(val).map(([cat, sks]) => ({
       category: cat,
       skills: Array.isArray(sks) ? sks : [String(sks)]
@@ -603,9 +714,9 @@ var DEFAULT_SECTION_ORDER = [
 var ResumeDataSchema = z2.object({
   personalInfo: PersonalInfoSchema.default({}),
   summary: z2.preprocess((v) => v === null || v === void 0 ? "" : String(v), z2.string().default("")),
-  experience: ensureArray(WorkExperienceSchema),
-  education: ensureArray(EducationSchema),
-  projects: ensureArray(ProjectSchema),
+  experience: ensureArray(WorkExperienceSchema, isDummyExperience),
+  education: ensureArray(EducationSchema, isDummyEducation),
+  projects: ensureArray(ProjectSchema, isDummyProject),
   skills: SkillsArraySchema,
   certifications: ensureArray(CertificationSchema),
   achievements: ensureArray(AchievementSchema),
@@ -1414,9 +1525,32 @@ var ResumeParseResultObjectSchema = z9.object({
     return [];
   }, z9.array(z9.string()).default([]))
 });
-var ResumeParseResultSchema = z9.preprocess((val) => {
-  if (!val || typeof val !== "object") return { resumeData: {} };
-  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary)) {
+var ResumeParseResultSchema = z9.preprocess((rawVal) => {
+  let val = rawVal;
+  if (!val) return { resumeData: {} };
+  if (typeof val === "string") {
+    try {
+      val = JSON.parse(val);
+    } catch {
+      return { resumeData: {} };
+    }
+  }
+  if (Array.isArray(val)) {
+    if (val.length === 1 && val[0]?.resumeData) {
+      return val[0];
+    }
+    const merged = Object.assign({}, ...val.filter((v) => v && typeof v === "object"));
+    if (merged.resumeData) {
+      return merged;
+    }
+    return {
+      resumeData: merged,
+      confidence: merged.confidence || {},
+      warnings: Array.isArray(merged.warnings) ? merged.warnings : []
+    };
+  }
+  if (typeof val !== "object") return { resumeData: {} };
+  if (!val.resumeData && (val.personalInfo || val.experience || val.education || val.skills || val.summary || val.projects)) {
     return {
       resumeData: val,
       confidence: val.confidence || {},
@@ -5150,7 +5284,8 @@ Strict requirement: Output must strictly conform to the expected JSON schema: ${
 
 // src/ai/parsers/deterministic-resume-parser.ts
 function parseResumeFromText(rawText) {
-  let cleanedText = rawText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
+  const safeText = rawText || "";
+  let cleanedText = safeText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
   cleanedText = cleanedText.replace(/\\([.\-*_\[\]\(\)\\])/g, "$1");
   cleanedText = cleanedText.replace(/[\u00e2\u00c2]\u0080\u0094|â€”/g, "\u2014").replace(/[\u00e2\u00c2]\u0080\u0093|â€“/g, "\u2013").replace(/[\u00e2\u00c2]\u0080\u00a2|â€¢/g, "\u2022").replace(/[\u00e2\u00c2]\u0080[\u0098\u0099]|â€˜|â€™/g, "'").replace(/[\u00e2\u00c2]\u0080[\u009c\u009d]|â€œ|â€/g, '"');
   const lines = cleanedText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).filter((l) => !l.startsWith("-- ") && !l.endsWith(" --"));
@@ -5395,7 +5530,11 @@ function parseResumeFromText(rawText) {
         const textWithoutDate = line.replace(DATE_RANGE_REGEX, "").replace(/[\(\)\[\],|–\-]/g, " ").trim();
         let jobTitle = textWithoutDate || "Professional";
         let company = "Company";
-        if (textWithoutDate.includes(" at ")) {
+        if (textWithoutDate.includes("\u2022")) {
+          const parts = textWithoutDate.split("\u2022");
+          jobTitle = parts[0].trim();
+          company = parts.slice(1).join(" ").trim() || "Company";
+        } else if (textWithoutDate.includes(" at ")) {
           const splitAt = textWithoutDate.split(" at ");
           jobTitle = splitAt[0].trim();
           company = splitAt[1].trim();
@@ -5482,7 +5621,9 @@ function parseResumeFromText(rawText) {
       const line = projLines[i];
       const isBullet = isBulletLine(line);
       const isFollowedByBullet = i + 1 < projLines.length && isBulletLine(projLines[i + 1]);
-      const isHeading = !isBullet && (line.includes("|") || /^#{2,4}\s+/.test(line) || line.includes("[") && line.includes("]") || line.length < 80 && !line.endsWith(".") && isFollowedByBullet || line.length < 80 && !line.endsWith(".") && (line.includes("(") || line.includes(" - ") || line.includes(" \u2014 ") || line.includes(" \u2013 ")));
+      const isFollowedByTools = i + 1 < projLines.length && /^(?:tools|tech|technologies|tech\s*stack):/i.test(projLines[i + 1]);
+      const isEmailOrUrlOnly = /^\[Link\]\(mailto:|^https?:\/\//i.test(line);
+      const isHeading = !isBullet && !isEmailOrUrlOnly && (line.includes("|") || /^#{2,4}\s+/.test(line) || line.includes("[") && line.includes("]") && !line.includes("mailto:") || line.length < 80 && !line.endsWith(".") && (isFollowedByBullet || isFollowedByTools) || line.length < 80 && !line.endsWith(".") && (line.includes("(") || line.includes(" - ") || line.includes(" \u2014 ") || line.includes(" \u2013 ")));
       if (isHeading) {
         if (currentProj) projects.push(currentProj);
         let name = line.replace(/^#{2,4}\s+/, "").trim();
@@ -5542,8 +5683,8 @@ function parseResumeFromText(rawText) {
           line.replace(/^(?:\\?[•\-*▪◦→‣¢“ƒ\+]|\\?\d+[\.\)])\s*/, "").trim()
         );
       } else if (currentProj) {
-        if (line.toLowerCase().startsWith("technologies:") || line.toLowerCase().startsWith("tech stack:")) {
-          const techs = line.replace(/^(technologies|tech stack):\s*/i, "").split(/[,•;]/).map((t) => t.trim()).filter(Boolean);
+        if (line.toLowerCase().startsWith("technologies:") || line.toLowerCase().startsWith("tech stack:") || line.toLowerCase().startsWith("tools:")) {
+          const techs = line.replace(/^(technologies|tech stack|tools):\s*/i, "").split(/[,•;]/).map((t) => t.trim()).filter(Boolean);
           currentProj.technologies = Array.from(
             /* @__PURE__ */ new Set([...currentProj.technologies, ...techs])
           );
@@ -5626,7 +5767,16 @@ function parseResumeFromText(rawText) {
         line
       )) {
         if (currentEdu) education.push(currentEdu);
-        let degree = line;
+        let degreeLine = line;
+        let startDate = "";
+        let endDate = "";
+        const dateMatch = degreeLine.match(DATE_RANGE_REGEX);
+        if (dateMatch) {
+          startDate = dateMatch[1];
+          endDate = /present|current|now/i.test(dateMatch[2]) ? "" : dateMatch[2];
+          degreeLine = degreeLine.replace(DATE_RANGE_REGEX, "").trim();
+        }
+        let degree = degreeLine;
         let fieldOfStudy = "";
         if (degree.toLowerCase().includes(" in ")) {
           const degParts = degree.split(/ in /i);
@@ -5639,8 +5789,8 @@ function parseResumeFromText(rawText) {
           degree,
           fieldOfStudy,
           location: "",
-          startDate: "",
-          endDate: "",
+          startDate,
+          endDate,
           current: false,
           gpa: "",
           description: "",
@@ -5653,8 +5803,14 @@ function parseResumeFromText(rawText) {
         if (gpaMatch && currentEdu) {
           currentEdu.gpa = gpaMatch[1];
         }
-      } else if (currentEdu && !currentEdu.institution && !line.includes("@")) {
-        currentEdu.institution = line;
+        if (currentEdu && (currentEdu.institution === "University" || !currentEdu.institution)) {
+          const instText = line.replace(/•?\s*(?:cgpa|gpa)\s*[:\-]?\s*[0-9.]+(?:\s*\/\s*[0-9.]+)?/i, "").replace(/^•|•$/g, "").trim();
+          if (instText && !instText.includes("@")) {
+            currentEdu.institution = instText;
+          }
+        }
+      } else if (currentEdu && (currentEdu.institution === "University" || !currentEdu.institution) && !line.includes("@")) {
+        currentEdu.institution = line.trim();
       }
     }
     if (currentEdu) education.push(currentEdu);
@@ -9306,30 +9462,137 @@ OUTPUT REQUIREMENTS:
 - Output ONLY valid JSON conforming to the ResumeParseResultSchema.
 - The "resumeData" field must conform to the ResumeData schema structure.
 - The "confidence" field must contain per-section confidence scores.
-- The "warnings" array should list any extraction ambiguities encountered.`;
+- The "warnings" array should list any extraction ambiguities encountered.
+
+CRITICAL STRUCTURAL CONSTRAINTS:
+- NEVER output stringified JSON inside arrays. All array items must be direct JSON objects.
+- NEVER put section names (like "education", "projects", "skills", "certifications", "languages", "links") or colons ":" as items inside the "experience" array!
+- Every section MUST be an independent top-level key under "resumeData".
+- Do NOT generate empty dummy objects (e.g. objects with empty jobTitle or company).
+- Always extract all sections present in the resume text.`;
 function buildResumeParserUserPrompt(structuredText) {
   return `Parse the following resume text completely across all pages into structured JSON data.
 
-Extract all available information and map it to the ResumeParseResultSchema.
+Extract all available information and map it to the exact JSON structure below.
 
 <RESUME_TEXT>
 ${structuredText}
 </RESUME_TEXT>
 
-Output a JSON object with three top-level keys:
-1. "resumeData" \u2014 the extracted resume data conforming to ResumeData schema, containing:
-   - personalInfo: { fullName, headline, email, phone, location, website, linkedin, github, linkedinUrl, githubUrl, portfolioUrl }
-   - summary: string (professional summary or objective)
-   - experience: array of { jobTitle, company, location, employmentType, startDate, endDate, current, description, bullets, technologiesUsed }
-   - education: array of { institution, degree, fieldOfStudy, location, startDate, endDate, current, gpa, description, honors }
-   - projects: array of { name, description, role, technologies, startDate, endDate, url, repoUrl, bullets, highlights }
-   - skills: array of { category, skills } where skills is string array
-   - certifications: array of { name, issuer, issueDate, expirationDate, credentialId, url }
-   - achievements: array of { title, description, date }
-   - languages: array of { language, proficiency } where proficiency is one of: Basic, Conversational, Professional, Fluent, Native
-   - links: array of { label, url }
-2. "confidence" \u2014 per-section confidence scores (0.0-1.0): { personalInfo, summary, experience, education, skills, projects, certifications, achievements, languages, links, overall }
-3. "warnings" \u2014 array of strings describing any extraction issues or ambiguities`;
+OUTPUT FORMAT:
+Output ONLY a JSON object with this exact structure:
+{
+  "resumeData": {
+    "personalInfo": {
+      "fullName": "Candidate Full Name",
+      "headline": "Current Title / Headline",
+      "email": "email@example.com",
+      "phone": "+1234567890",
+      "location": "City, State, Country",
+      "website": "https://...",
+      "linkedin": "https://linkedin.com/in/...",
+      "github": "https://github.com/...",
+      "linkedinUrl": "https://linkedin.com/in/...",
+      "githubUrl": "https://github.com/...",
+      "portfolioUrl": "https://..."
+    },
+    "summary": "Professional summary paragraph...",
+    "experience": [
+      {
+        "jobTitle": "Job Title",
+        "company": "Company Name",
+        "location": "City, Country",
+        "employmentType": "Full-time",
+        "startDate": "Month Year",
+        "endDate": "Month Year or empty if current",
+        "current": false,
+        "description": "Role overview...",
+        "bullets": [
+          "Accomplishment or responsibility bullet 1",
+          "Accomplishment or responsibility bullet 2"
+        ],
+        "technologiesUsed": ["Skill1", "Skill2"]
+      }
+    ],
+    "education": [
+      {
+        "institution": "University or School Name",
+        "degree": "Degree (e.g. B.Tech, B.S., M.S.)",
+        "fieldOfStudy": "Major / Field of Study",
+        "location": "City, Country",
+        "startDate": "Year",
+        "endDate": "Year",
+        "current": false,
+        "gpa": "GPA / Grade if present",
+        "description": "",
+        "honors": []
+      }
+    ],
+    "projects": [
+      {
+        "name": "Project Name",
+        "description": "Project summary description",
+        "role": "",
+        "technologies": ["Tech1", "Tech2"],
+        "startDate": "",
+        "endDate": "",
+        "url": "",
+        "repoUrl": "",
+        "bullets": ["Project bullet 1", "Project bullet 2"],
+        "highlights": []
+      }
+    ],
+    "skills": [
+      {
+        "category": "Category Name (e.g. Programming, Tools, Frontend, AI/ML)",
+        "skills": ["Skill1", "Skill2", "Skill3"]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Certification Name",
+        "issuer": "Issuing Org",
+        "issueDate": "",
+        "expirationDate": "",
+        "credentialId": "",
+        "url": ""
+      }
+    ],
+    "achievements": [
+      {
+        "title": "Achievement Title",
+        "description": "Details",
+        "date": ""
+      }
+    ],
+    "languages": [
+      {
+        "language": "Language",
+        "proficiency": "Professional"
+      }
+    ],
+    "links": [
+      {
+        "label": "Link Title",
+        "url": "https://..."
+      }
+    ]
+  },
+  "confidence": {
+    "personalInfo": 1.0,
+    "summary": 1.0,
+    "experience": 1.0,
+    "education": 1.0,
+    "skills": 1.0,
+    "projects": 1.0,
+    "certifications": 1.0,
+    "achievements": 1.0,
+    "languages": 1.0,
+    "links": 1.0,
+    "overall": 1.0
+  },
+  "warnings": []
+}`;
 }
 
 // src/ai/prompts/resume-strategy.prompt.ts
@@ -13289,6 +13552,66 @@ var ResumeImportService = class {
       if (resumeData.personalInfo?.fullName === "John Doe" && !extracted.rawText.toLowerCase().includes("john doe")) {
         const fallbackResult = parseResumeFromText(extracted.structuredText);
         resumeData = fallbackResult.resumeData;
+      }
+      if (Array.isArray(resumeData.experience)) {
+        resumeData.experience = resumeData.experience.filter((exp) => {
+          if (!exp || typeof exp !== "object") return false;
+          const title = String(exp.jobTitle || "").trim();
+          const company = String(exp.company || "").trim();
+          const desc = String(exp.description || "").trim();
+          const bullets = Array.isArray(exp.bullets) ? exp.bullets.filter(Boolean) : [];
+          if (/^(education|projects?|skills?|technical\s*skills|certifications?|achievements?|languages?|links?|experience|[:;,\-–—|•*#\s]+)$/i.test(title)) {
+            return false;
+          }
+          if ((!title || title === "Role") && (!company || company === "Company") && !desc && bullets.length === 0) {
+            return false;
+          }
+          return true;
+        });
+      }
+      const textLower = extracted.rawText.toLowerCase();
+      let deterministicFallback = null;
+      const getFallback = () => {
+        if (!deterministicFallback) {
+          deterministicFallback = parseResumeFromText(extracted.structuredText);
+        }
+        return deterministicFallback;
+      };
+      const hasEduInDoc = /(?:education|academic|b\.?tech|m\.?tech|bachelor|master|degree|university|college)\b/i.test(textLower);
+      if (hasEduInDoc && (!resumeData.education || resumeData.education.length === 0)) {
+        const fb = getFallback();
+        if (fb.resumeData.education?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty education section from deterministic parser");
+          resumeData.education = fb.resumeData.education;
+        }
+      }
+      const hasProjInDoc = /(?:projects?|portfolio)\b/i.test(textLower);
+      if (hasProjInDoc && (!resumeData.projects || resumeData.projects.length === 0)) {
+        const fb = getFallback();
+        if (fb.resumeData.projects?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty projects section from deterministic parser");
+          resumeData.projects = fb.resumeData.projects;
+        }
+      }
+      const hasSkillsInDoc = /(?:skills?|competencies|technologies)\b/i.test(textLower);
+      const totalParsedSkills = (resumeData.skills || []).reduce(
+        (sum, g) => sum + (g.skills?.length || 0),
+        0
+      );
+      if (hasSkillsInDoc && totalParsedSkills === 0) {
+        const fb = getFallback();
+        if (fb.resumeData.skills?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty skills section from deterministic parser");
+          resumeData.skills = fb.resumeData.skills;
+        }
+      }
+      const hasExpInDoc = /(?:experience|employment|work history)\b/i.test(textLower);
+      if (hasExpInDoc && (!resumeData.experience || resumeData.experience.length === 0)) {
+        const fb = getFallback();
+        if (fb.resumeData.experience?.length > 0) {
+          logger.info("[ResumeImport] Reconciled empty experience section from deterministic parser");
+          resumeData.experience = fb.resumeData.experience;
+        }
       }
       const parserWarnings = validateParseCompleteness(
         extracted.rawText,
