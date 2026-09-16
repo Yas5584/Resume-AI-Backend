@@ -5,16 +5,5 @@
       "source": "/(.*)",
       "destination": "/api/index"
     }
-  ],
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "packages/**"
-    },
-    "src/app.ts": {
-      "includeFiles": "packages/**"
-    },
-    "src/server.ts": {
-      "includeFiles": "packages/**"
-    }
-  }
+  ]
 }
