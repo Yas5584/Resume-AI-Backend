@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import type { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
+import { buildApp } from "./app.js";
 
 let appPromise: Promise<FastifyInstance> | null = null;
 

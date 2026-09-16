@@ -98,6 +98,21 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(rateLimit, rateLimitOptions);
 
+  // Friendly root route for Vercel / browser health checks
+  app.get("/", async () => {
+    return {
+      name: "ResumeAI Backend API",
+      status: "ok",
+      version: "0.1.0",
+      timestamp: new Date().toISOString(),
+    };
+  });
+
+  // Favicon handler to avoid spurious 404s
+  app.get("/favicon.ico", async (_, reply) => {
+    return reply.status(204).send();
+  });
+
   // Root Health Check for Railway / Cloud Load Balancers
   app.get("/health", async () => {
     return {
