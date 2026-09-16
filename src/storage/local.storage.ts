@@ -61,8 +61,31 @@ export class LocalStorageProvider implements StorageProvider {
 
   async getSignedDownloadUrl(
     key: string,
-    _expiresInSeconds = 3600,
+    _expiresInSeconds = 900,
   ): Promise<string> {
     return `/uploads/${key}`;
+  }
+
+  async exists(key: string): Promise<boolean> {
+    try {
+      const targetPath = this.resolveSafePath(key);
+      await fs.access(targetPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async getMetadata(key: string) {
+    try {
+      const targetPath = this.resolveSafePath(key);
+      const stat = await fs.stat(targetPath);
+      return {
+        sizeBytes: stat.size,
+        lastModified: stat.mtime,
+      };
+    } catch {
+      return null;
+    }
   }
 }

@@ -145,13 +145,77 @@ var EnvSchema = z.object({
   COOKIE_SECRET: z.string().min(16).default("development-cookie-secret-key-min-16-chars"),
   COOKIE_SAME_SITE: z.enum(["lax", "none", "strict"]).default("lax"),
   PDF_RENDERER: z.enum(["playwright", "puppeteer"]).default("playwright"),
-  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  STORAGE_PROVIDER: z.enum(["local", "s3", "b2"]).default("local"),
   LOCAL_STORAGE_DIR: z.string().default("./uploads"),
   S3_ENDPOINT: z.string().optional(),
   S3_BUCKET: z.string().default("resumeai-uploads"),
   S3_REGION: z.string().default("us-east-1"),
   S3_ACCESS_KEY_ID: z.string().optional(),
-  S3_SECRET_ACCESS_KEY: z.string().optional()
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  // Backblaze B2 Storage Configuration
+  B2_KEY_ID: z.string().optional(),
+  B2_APPLICATION_KEY: z.string().optional(),
+  B2_BUCKET_NAME: z.string().default("resumeai-storage-2026"),
+  B2_ENDPOINT: z.string().default("https://s3.us-east-005.backblazeb2.com"),
+  B2_REGION: z.string().default("us-east-005"),
+  B2_INTEGRATION_TEST: z.string().optional()
+}).superRefine((data, ctx) => {
+  if (data.STORAGE_PROVIDER === "b2") {
+    const keyId = data.B2_KEY_ID || data.S3_ACCESS_KEY_ID;
+    const appKey = data.B2_APPLICATION_KEY || data.S3_SECRET_ACCESS_KEY;
+    const bucket = data.B2_BUCKET_NAME || data.S3_BUCKET;
+    const endpoint = data.B2_ENDPOINT || data.S3_ENDPOINT;
+    if (!keyId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["B2_KEY_ID"],
+        message: "B2_KEY_ID (or S3_ACCESS_KEY_ID) is required when STORAGE_PROVIDER is 'b2'"
+      });
+    }
+    if (!appKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["B2_APPLICATION_KEY"],
+        message: "B2_APPLICATION_KEY (or S3_SECRET_ACCESS_KEY) is required when STORAGE_PROVIDER is 'b2'"
+      });
+    }
+    if (!bucket) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["B2_BUCKET_NAME"],
+        message: "B2_BUCKET_NAME (or S3_BUCKET) is required when STORAGE_PROVIDER is 'b2'"
+      });
+    }
+    if (!endpoint) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["B2_ENDPOINT"],
+        message: "B2_ENDPOINT (or S3_ENDPOINT) is required when STORAGE_PROVIDER is 'b2'"
+      });
+    }
+  } else if (data.STORAGE_PROVIDER === "s3") {
+    if (!data.S3_ACCESS_KEY_ID) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["S3_ACCESS_KEY_ID"],
+        message: "S3_ACCESS_KEY_ID is required when STORAGE_PROVIDER is 's3'"
+      });
+    }
+    if (!data.S3_SECRET_ACCESS_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["S3_SECRET_ACCESS_KEY"],
+        message: "S3_SECRET_ACCESS_KEY is required when STORAGE_PROVIDER is 's3'"
+      });
+    }
+    if (!data.S3_BUCKET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["S3_BUCKET"],
+        message: "S3_BUCKET is required when STORAGE_PROVIDER is 's3'"
+      });
+    }
+  }
 });
 function loadConfig() {
   const parsed = EnvSchema.safeParse(process.env);
@@ -12506,7 +12570,7 @@ var userRoutes = async (fastify2) => {
 };
 
 // src/services/import.service.ts
-import path3 from "node:path";
+import path4 from "node:path";
 
 // src/repositories/import.repository.ts
 var ImportRepository = class {
@@ -12583,6 +12647,11 @@ var ImportRepository = class {
       })
     ]);
     return { items, total };
+  }
+  async delete(id) {
+    return prisma.resumeImport.delete({
+      where: { id }
+    });
   }
 };
 var importRepository = new ImportRepository();
@@ -12771,8 +12840,29 @@ var LocalStorageProvider = class {
     } catch {
     }
   }
-  async getSignedDownloadUrl(key, _expiresInSeconds = 3600) {
+  async getSignedDownloadUrl(key, _expiresInSeconds = 900) {
     return `/uploads/${key}`;
+  }
+  async exists(key) {
+    try {
+      const targetPath = this.resolveSafePath(key);
+      await fs2.access(targetPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async getMetadata(key) {
+    try {
+      const targetPath = this.resolveSafePath(key);
+      const stat = await fs2.stat(targetPath);
+      return {
+        sizeBytes: stat.size,
+        lastModified: stat.mtime
+      };
+    } catch {
+      return null;
+    }
   }
 };
 
@@ -12781,10 +12871,19 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  HeadObjectCommand
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "node:stream";
+function resolveRegionFromEndpoint(endpoint, fallbackRegion = "us-east-1") {
+  if (!endpoint) return fallbackRegion;
+  const match = endpoint.match(/s3\.([a-z0-9\-]+)\.backblazeb2\.com/i);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return fallbackRegion;
+}
 var S3StorageProvider = class {
   config;
   client;
@@ -12794,15 +12893,17 @@ var S3StorageProvider = class {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey
     } : void 0;
+    const region = config.region || resolveRegionFromEndpoint(config.endpoint, "us-east-005");
+    const forcePathStyle = config.forcePathStyle !== void 0 ? config.forcePathStyle : Boolean(config.endpoint);
     this.client = new S3Client({
-      region: config.region || "us-east-1",
+      region,
       endpoint: config.endpoint || void 0,
       credentials,
-      forcePathStyle: Boolean(config.endpoint)
-      // Required for MinIO and some R2 custom domains
+      forcePathStyle
     });
   }
   async uploadFile(key, buffer, options) {
+    const start = Date.now();
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
       Key: key,
@@ -12810,60 +12911,217 @@ var S3StorageProvider = class {
       ContentType: options?.contentType || "application/octet-stream",
       Metadata: options?.metadata
     });
-    await this.client.send(command);
-    const baseUrl = this.config.publicUrlBase || (this.config.endpoint ? `${this.config.endpoint}/${this.config.bucket}` : `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com`);
-    return {
-      key,
-      url: `${baseUrl}/${key}`,
-      sizeBytes: buffer.length
-    };
+    try {
+      await this.client.send(command);
+      const durationMs = Date.now() - start;
+      logger.info("[Storage] Uploaded object successfully", {
+        key,
+        bucket: this.config.bucket,
+        sizeBytes: buffer.length,
+        durationMs
+      });
+      const baseUrl = this.config.publicUrlBase || (this.config.endpoint ? `${this.config.endpoint}/${this.config.bucket}` : `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com`);
+      return {
+        key,
+        url: `${baseUrl}/${key}`,
+        sizeBytes: buffer.length
+      };
+    } catch (err) {
+      logger.error("[Storage] Failed to upload object", {
+        key,
+        bucket: this.config.bucket,
+        errorMessage: err?.message
+      });
+      throw AppError.internal("Storage upload failed.");
+    }
   }
   async getFile(key) {
+    const start = Date.now();
     const command = new GetObjectCommand({
       Bucket: this.config.bucket,
       Key: key
     });
-    const response = await this.client.send(command);
-    if (!response.Body) {
-      throw new Error(`S3 object body is empty for key: ${key}`);
-    }
-    if (response.Body instanceof Readable) {
-      const chunks = [];
-      for await (const chunk of response.Body) {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    try {
+      const response = await this.client.send(command);
+      if (!response.Body) {
+        throw AppError.notFound("Storage object is empty");
       }
-      return Buffer.concat(chunks);
+      let resultBuffer;
+      if (response.Body instanceof Readable) {
+        const chunks = [];
+        for await (const chunk of response.Body) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        resultBuffer = Buffer.concat(chunks);
+      } else {
+        const byteArray = await response.Body.transformToByteArray();
+        resultBuffer = Buffer.from(byteArray);
+      }
+      logger.info("[Storage] Retrieved object successfully", {
+        key,
+        bucket: this.config.bucket,
+        sizeBytes: resultBuffer.length,
+        durationMs: Date.now() - start
+      });
+      return resultBuffer;
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      const code = err?.name || err?.Code || err?.code;
+      if (code === "NoSuchKey" || code === "NotFound" || err?.$metadata?.httpStatusCode === 404) {
+        throw AppError.notFound("Storage object");
+      }
+      logger.error("[Storage] Failed to retrieve object", {
+        key,
+        bucket: this.config.bucket,
+        errorMessage: err?.message
+      });
+      throw AppError.internal("Storage retrieval failed.");
     }
-    const byteArray = await response.Body.transformToByteArray();
-    return Buffer.from(byteArray);
   }
   async deleteFile(key) {
+    const start = Date.now();
     const command = new DeleteObjectCommand({
       Bucket: this.config.bucket,
       Key: key
     });
-    await this.client.send(command);
+    try {
+      await this.client.send(command);
+      logger.info("[Storage] Deleted object successfully", {
+        key,
+        bucket: this.config.bucket,
+        durationMs: Date.now() - start
+      });
+    } catch (err) {
+      const code = err?.name || err?.Code || err?.code;
+      if (code === "NoSuchKey" || code === "NotFound" || err?.$metadata?.httpStatusCode === 404) {
+        return;
+      }
+      logger.error("[Storage] Failed to delete object", {
+        key,
+        bucket: this.config.bucket,
+        errorMessage: err?.message
+      });
+      throw AppError.internal("Storage deletion failed.");
+    }
   }
-  async getSignedDownloadUrl(key, expiresInSeconds = 3600) {
+  async getSignedDownloadUrl(key, expiresInSeconds = 900) {
     const command = new GetObjectCommand({
       Bucket: this.config.bucket,
       Key: key
     });
-    return getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+    try {
+      const signedUrl = await getSignedUrl(this.client, command, {
+        expiresIn: expiresInSeconds
+      });
+      logger.info("[Storage] Generated presigned download URL", {
+        key,
+        bucket: this.config.bucket,
+        expiresInSeconds
+      });
+      return signedUrl;
+    } catch (err) {
+      logger.error("[Storage] Failed to generate presigned download URL", {
+        key,
+        bucket: this.config.bucket,
+        errorMessage: err?.message
+      });
+      throw AppError.internal("Failed to generate download URL.");
+    }
+  }
+  async exists(key) {
+    const command = new HeadObjectCommand({
+      Bucket: this.config.bucket,
+      Key: key
+    });
+    try {
+      await this.client.send(command);
+      return true;
+    } catch (err) {
+      const code = err?.name || err?.Code || err?.code;
+      if (code === "NotFound" || code === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      return false;
+    }
+  }
+  async getMetadata(key) {
+    const command = new HeadObjectCommand({
+      Bucket: this.config.bucket,
+      Key: key
+    });
+    try {
+      const response = await this.client.send(command);
+      return {
+        contentType: response.ContentType,
+        sizeBytes: response.ContentLength,
+        lastModified: response.LastModified,
+        metadata: response.Metadata
+      };
+    } catch (err) {
+      const code = err?.name || err?.Code || err?.code;
+      if (code === "NotFound" || code === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404) {
+        return null;
+      }
+      throw AppError.internal("Failed to retrieve storage metadata.");
+    }
   }
 };
+
+// src/storage/storage-path.util.ts
+import path3 from "node:path";
+function sanitizeFilenameForStorage(filename) {
+  if (!filename || typeof filename !== "string") {
+    return "document.bin";
+  }
+  const rawExt = path3.extname(filename);
+  const baseWithoutExt = path3.basename(filename, rawExt);
+  const safeExt = rawExt.toLowerCase().replace(/[^a-z0-9.]/g, "").slice(0, 10);
+  const sanitizedBase = baseWithoutExt.replace(/\.\.+/g, "").replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/^_+|_+$/g, "").slice(0, 80);
+  const finalBase = sanitizedBase || "document";
+  return `${finalBase}${safeExt}`;
+}
+function assertSafeStorageKey(key) {
+  if (!key || typeof key !== "string") {
+    throw AppError.badRequest("Invalid storage key: key must be a non-empty string.");
+  }
+  if (key.includes("..") || key.includes("\\") || key.startsWith("/") || key.includes("\0")) {
+    throw AppError.badRequest("Path traversal or illegal characters detected in storage key.");
+  }
+  const normalized = path3.posix.normalize(key);
+  if (normalized.startsWith("..") || normalized.startsWith("/")) {
+    throw AppError.badRequest("Path traversal detected in storage key.");
+  }
+}
+function buildImportStorageKey(userId, importId, originalFilename) {
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_\-]/g, "_");
+  const safeImportId = importId.replace(/[^a-zA-Z0-9_\-]/g, "_");
+  const safeFilename = sanitizeFilenameForStorage(originalFilename);
+  const key = `imports/${safeUserId}/${safeImportId}/${safeFilename}`;
+  assertSafeStorageKey(key);
+  return key;
+}
 
 // src/storage/index.ts
 var storageInstance = null;
 function getStorageProvider() {
   if (storageInstance) return storageInstance;
-  if (env.STORAGE_PROVIDER === "s3" && env.S3_BUCKET) {
+  if (env.STORAGE_PROVIDER === "b2") {
+    storageInstance = new S3StorageProvider({
+      bucket: env.B2_BUCKET_NAME || env.S3_BUCKET || "resumeai-storage-2026",
+      region: env.B2_REGION || env.S3_REGION || "us-east-005",
+      endpoint: env.B2_ENDPOINT || env.S3_ENDPOINT || "https://s3.us-east-005.backblazeb2.com",
+      accessKeyId: env.B2_KEY_ID || env.S3_ACCESS_KEY_ID,
+      secretAccessKey: env.B2_APPLICATION_KEY || env.S3_SECRET_ACCESS_KEY,
+      forcePathStyle: true
+    });
+  } else if (env.STORAGE_PROVIDER === "s3" && env.S3_BUCKET) {
     storageInstance = new S3StorageProvider({
       bucket: env.S3_BUCKET,
       region: env.S3_REGION,
       endpoint: env.S3_ENDPOINT,
       accessKeyId: env.S3_ACCESS_KEY_ID,
-      secretAccessKey: env.S3_SECRET_ACCESS_KEY
+      secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      forcePathStyle: Boolean(env.S3_ENDPOINT)
     });
   } else {
     storageInstance = new LocalStorageProvider(env.LOCAL_STORAGE_DIR);
@@ -12890,7 +13148,7 @@ var ResumeImportService = class {
         "Unsupported file type. Only PDF and DOCX files are accepted."
       );
     }
-    const baseFilename = path3.basename(options.filename);
+    const baseFilename = path4.basename(options.filename);
     const lowerFilename = baseFilename.toLowerCase();
     const hasValidExt = ALLOWED_IMPORT_EXTENSIONS.some(
       (ext) => lowerFilename.endsWith(ext)
@@ -12925,8 +13183,7 @@ var ResumeImportService = class {
     });
     let storageKey = null;
     try {
-      const sanitizedFilename = baseFilename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      storageKey = `imports/${userId}/${importRecord.id}/${sanitizedFilename}`;
+      storageKey = buildImportStorageKey(userId, importRecord.id, baseFilename);
       try {
         await getStorageProvider().uploadFile(storageKey, fileBuffer, {
           contentType: options.mimeType
@@ -13127,6 +13384,58 @@ var ResumeImportService = class {
     const skip = (page - 1) * limit;
     return importRepository.findByUserId(userId, skip, limit);
   }
+  async getImportDownloadUrl(importId, userId, expiresInSeconds = 900) {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+    if (!record.storageKey) {
+      throw AppError.notFound("File not available in storage");
+    }
+    const downloadUrl = await getStorageProvider().getSignedDownloadUrl(
+      record.storageKey,
+      expiresInSeconds
+    );
+    return {
+      downloadUrl,
+      filename: record.originalFilename,
+      mimeType: record.mimeType,
+      expiresInSeconds
+    };
+  }
+  async getImportFileBuffer(importId, userId) {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+    if (!record.storageKey) {
+      throw AppError.notFound("File not available in storage");
+    }
+    const buffer = await getStorageProvider().getFile(record.storageKey);
+    return {
+      buffer,
+      filename: record.originalFilename,
+      mimeType: record.mimeType
+    };
+  }
+  async deleteImport(importId, userId) {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+    if (record.storageKey) {
+      try {
+        await getStorageProvider().deleteFile(record.storageKey);
+      } catch (err) {
+        logger.warn("[ResumeImport] Failed to delete file during import deletion", {
+          importId,
+          storageKey: record.storageKey,
+          error: err?.message
+        });
+      }
+    }
+    await importRepository.delete(importId);
+  }
 };
 var resumeImportService = new ResumeImportService();
 
@@ -13174,6 +13483,33 @@ var ImportController = class {
     );
     return reply.status(200).send({ success: true, data: result });
   }
+  async getDownloadUrl(request, reply) {
+    const expiresIn = request.query.expiresIn ? Math.min(Math.max(parseInt(request.query.expiresIn, 10), 60), 3600) : 900;
+    const data = await resumeImportService.getImportDownloadUrl(
+      request.params.id,
+      request.user.id,
+      expiresIn
+    );
+    return reply.status(200).send({ success: true, data });
+  }
+  async streamFile(request, reply) {
+    const { buffer, filename, mimeType } = await resumeImportService.getImportFileBuffer(
+      request.params.id,
+      request.user.id
+    );
+    reply.header("Content-Type", mimeType);
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+    reply.header("Content-Length", buffer.length);
+    reply.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    return reply.send(buffer);
+  }
+  async deleteImport(request, reply) {
+    await resumeImportService.deleteImport(request.params.id, request.user.id);
+    return reply.status(200).send({ success: true, message: "Import deleted successfully" });
+  }
 };
 var importController = new ImportController();
 
@@ -13183,6 +13519,9 @@ var importRoutes = async (fastify2) => {
   fastify2.post("/", importController.importResume.bind(importController));
   fastify2.get("/", importController.listImports.bind(importController));
   fastify2.get("/:id", importController.getImport.bind(importController));
+  fastify2.get("/:id/download", importController.getDownloadUrl.bind(importController));
+  fastify2.get("/:id/file", importController.streamFile.bind(importController));
+  fastify2.delete("/:id", importController.deleteImport.bind(importController));
 };
 
 // src/repositories/match.repository.ts

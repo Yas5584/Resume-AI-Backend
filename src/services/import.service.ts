@@ -19,7 +19,7 @@ import {
   RESUME_PARSER_SYSTEM_PROMPT,
   buildResumeParserUserPrompt,
 } from "../ai/prompts/resume-parser.prompt.js";
-import { getStorageProvider } from "../storage/index.js";
+import { getStorageProvider, buildImportStorageKey } from "../storage/index.js";
 import { AppError } from "../errors/index.js";
 import { parseResumeFromText } from "../ai/parsers/deterministic-resume-parser.js";
 import { logger } from "../utils/logger.js";
@@ -110,8 +110,7 @@ export class ResumeImportService {
 
     try {
       // 5. Store file via storage provider with path-traversal resistant key
-      const sanitizedFilename = baseFilename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      storageKey = `imports/${userId}/${importRecord.id}/${sanitizedFilename}`;
+      storageKey = buildImportStorageKey(userId, importRecord.id, baseFilename);
       try {
         await getStorageProvider().uploadFile(storageKey, fileBuffer, {
           contentType: options.mimeType,
@@ -351,6 +350,78 @@ export class ResumeImportService {
   async listImports(userId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     return importRepository.findByUserId(userId, skip, limit);
+  }
+
+  async getImportDownloadUrl(
+    importId: string,
+    userId: string,
+    expiresInSeconds = 900,
+  ): Promise<{
+    downloadUrl: string;
+    filename: string;
+    mimeType: string;
+    expiresInSeconds: number;
+  }> {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+    if (!record.storageKey) {
+      throw AppError.notFound("File not available in storage");
+    }
+
+    const downloadUrl = await getStorageProvider().getSignedDownloadUrl(
+      record.storageKey,
+      expiresInSeconds,
+    );
+
+    return {
+      downloadUrl,
+      filename: record.originalFilename,
+      mimeType: record.mimeType,
+      expiresInSeconds,
+    };
+  }
+
+  async getImportFileBuffer(
+    importId: string,
+    userId: string,
+  ): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+    if (!record.storageKey) {
+      throw AppError.notFound("File not available in storage");
+    }
+
+    const buffer = await getStorageProvider().getFile(record.storageKey);
+    return {
+      buffer,
+      filename: record.originalFilename,
+      mimeType: record.mimeType,
+    };
+  }
+
+  async deleteImport(importId: string, userId: string): Promise<void> {
+    const record = await importRepository.findByIdAndUserId(importId, userId);
+    if (!record) {
+      throw AppError.notFound("Import");
+    }
+
+    if (record.storageKey) {
+      try {
+        await getStorageProvider().deleteFile(record.storageKey);
+      } catch (err: any) {
+        logger.warn("[ResumeImport] Failed to delete file during import deletion", {
+          importId,
+          storageKey: record.storageKey,
+          error: err?.message,
+        });
+      }
+    }
+
+    await importRepository.delete(importId);
   }
 }
 

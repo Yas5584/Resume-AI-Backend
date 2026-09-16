@@ -10,6 +10,13 @@ export interface UploadResult {
   sizeBytes: number;
 }
 
+export interface StorageMetadata {
+  contentType?: string;
+  sizeBytes?: number;
+  lastModified?: Date;
+  metadata?: Record<string, string>;
+}
+
 export interface StorageProvider {
   uploadFile(
     key: string,
@@ -19,4 +26,6 @@ export interface StorageProvider {
   getFile(key: string): Promise<Buffer>;
   deleteFile(key: string): Promise<void>;
   getSignedDownloadUrl(key: string, expiresInSeconds?: number): Promise<string>;
+  exists?(key: string): Promise<boolean>;
+  getMetadata?(key: string): Promise<StorageMetadata | null>;
 }

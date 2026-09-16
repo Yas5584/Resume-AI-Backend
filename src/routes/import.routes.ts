@@ -8,4 +8,7 @@ export const importRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post("/", importController.importResume.bind(importController));
   fastify.get("/", importController.listImports.bind(importController));
   fastify.get("/:id", importController.getImport.bind(importController));
+  fastify.get("/:id/download", importController.getDownloadUrl.bind(importController));
+  fastify.get("/:id/file", importController.streamFile.bind(importController));
+  fastify.delete("/:id", importController.deleteImport.bind(importController));
 };

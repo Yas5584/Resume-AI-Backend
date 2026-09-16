@@ -108,6 +108,12 @@ export class ImportRepository {
 
     return { items, total };
   }
+
+  async delete(id: string): Promise<ResumeImport> {
+    return prisma.resumeImport.delete({
+      where: { id },
+    });
+  }
 }
 
 export const importRepository = new ImportRepository();

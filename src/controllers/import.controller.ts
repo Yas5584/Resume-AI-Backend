@@ -70,6 +70,57 @@ export class ImportController {
     );
     return reply.status(200).send({ success: true, data: result });
   }
+
+  async getDownloadUrl(
+    request: FastifyRequest<{
+      Params: { id: string };
+      Querystring: { expiresIn?: string };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const expiresIn = request.query.expiresIn
+      ? Math.min(Math.max(parseInt(request.query.expiresIn, 10), 60), 3600)
+      : 900;
+
+    const data = await resumeImportService.getImportDownloadUrl(
+      request.params.id,
+      request.user!.id,
+      expiresIn,
+    );
+
+    return reply.status(200).send({ success: true, data });
+  }
+
+  async streamFile(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) {
+    const { buffer, filename, mimeType } =
+      await resumeImportService.getImportFileBuffer(
+        request.params.id,
+        request.user!.id,
+      );
+
+    reply.header("Content-Type", mimeType);
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`,
+    );
+    reply.header("Content-Length", buffer.length);
+    reply.header("Cache-Control", "no-cache, no-store, must-revalidate");
+
+    return reply.send(buffer);
+  }
+
+  async deleteImport(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) {
+    await resumeImportService.deleteImport(request.params.id, request.user!.id);
+    return reply
+      .status(200)
+      .send({ success: true, message: "Import deleted successfully" });
+  }
 }
 
 export const importController = new ImportController();
