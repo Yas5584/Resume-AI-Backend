@@ -1,3 +1,4 @@
+import "./polyfills.js";
 import type { IncomingMessage, ServerResponse } from "http";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "./app.js";

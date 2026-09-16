@@ -16,6 +16,94 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
 
+// src/polyfills.ts
+if (typeof globalThis !== "undefined") {
+  if (!globalThis.DOMMatrix) {
+    globalThis.DOMMatrix = class DOMMatrix {
+      a = 1;
+      b = 0;
+      c = 0;
+      d = 1;
+      e = 0;
+      f = 0;
+      m11 = 1;
+      m12 = 0;
+      m13 = 0;
+      m14 = 0;
+      m21 = 0;
+      m22 = 1;
+      m23 = 0;
+      m24 = 0;
+      m31 = 0;
+      m32 = 0;
+      m33 = 1;
+      m34 = 0;
+      m41 = 0;
+      m42 = 0;
+      m43 = 0;
+      m44 = 1;
+      is2D = true;
+      isIdentity = true;
+      constructor(_init) {
+      }
+      multiplySelf() {
+        return this;
+      }
+      preMultiplySelf() {
+        return this;
+      }
+      translate() {
+        return this;
+      }
+      scale() {
+        return this;
+      }
+      rotate() {
+        return this;
+      }
+      invertSelf() {
+        return this;
+      }
+    };
+  }
+  if (!globalThis.ImageData) {
+    globalThis.ImageData = class ImageData {
+      width;
+      height;
+      data;
+      constructor(width = 0, height = 0) {
+        this.width = width;
+        this.height = height;
+        this.data = new Uint8ClampedArray(width * height * 4);
+      }
+    };
+  }
+  if (!globalThis.Path2D) {
+    globalThis.Path2D = class Path2D {
+      addPath() {
+      }
+      closePath() {
+      }
+      moveTo() {
+      }
+      lineTo() {
+      }
+      bezierCurveTo() {
+      }
+      quadraticCurveTo() {
+      }
+      arc() {
+      }
+      arcTo() {
+      }
+      ellipse() {
+      }
+      rect() {
+      }
+    };
+  }
+}
+
 // src/app.ts
 import fastify from "fastify";
 import cors from "@fastify/cors";
@@ -8674,10 +8762,10 @@ var JobService = class {
 var jobService = new JobService();
 
 // src/documents/document-extractor.service.ts
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 var DocumentExtractionService = class {
   async extractPdf(buffer) {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     let doc;
     try {

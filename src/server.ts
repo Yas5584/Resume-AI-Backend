@@ -1,3 +1,4 @@
+import "./polyfills.js";
 import { buildApp } from "./app.js";
 import { env } from "./config/index.js";
 

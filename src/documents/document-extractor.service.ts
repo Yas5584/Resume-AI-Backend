@@ -1,4 +1,3 @@
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import {
   DocumentExtractor,
@@ -17,6 +16,7 @@ import {
  */
 export class DocumentExtractionService implements DocumentExtractor {
   async extractPdf(buffer: Buffer): Promise<ExtractedDocument> {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     let doc: any;
     try {
