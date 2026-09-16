@@ -44,7 +44,7 @@ export class ImportRepository {
           storageKey: updates.storageKey,
         }),
         ...(updates?.extractedText !== undefined && {
-          extractedText: updates.extractedText,
+          extractedText: updates.extractedText?.replace(/\0/g, ""),
         }),
         ...(updates?.parseConfidence !== undefined && {
           parseConfidence: updates.parseConfidence,
@@ -53,7 +53,7 @@ export class ImportRepository {
           resumeId: updates.resumeId,
         }),
         ...(updates?.errorMessage !== undefined && {
-          errorMessage: updates.errorMessage,
+          errorMessage: updates.errorMessage?.replace(/\0/g, ""),
         }),
         ...(updates?.errorCode !== undefined && {
           errorCode: updates.errorCode,

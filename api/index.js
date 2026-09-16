@@ -8979,8 +8979,8 @@ ${p.text}
       pages,
       totalCharacters,
       totalWords,
-      rawText,
-      structuredText,
+      rawText: rawText.replace(/\0/g, ""),
+      structuredText: structuredText.replace(/\0/g, ""),
       warnings,
       isScannedOrImageOnly,
       metadata: {
@@ -9095,7 +9095,7 @@ ${p.text}
    * Normalizes UTF-8 moji-bake encoding artifacts from PDF Type1 font streams.
    */
   normalizeEncodingArtifacts(text) {
-    return text.replace(/[\u00e2\u00c2]\u0080\u0094|â€”/g, "\u2014").replace(/[\u00e2\u00c2]\u0080\u0093|â€“/g, "\u2013").replace(/[\u00e2\u00c2]\u0080\u00a2|â€¢/g, "\u2022").replace(/[\u00e2\u00c2]\u0080[\u0098\u0099]|â€˜|â€™/g, "'").replace(/[\u00e2\u00c2]\u0080[\u009c\u009d]|â€œ|â€/g, '"');
+    return text.replace(/\0/g, "").replace(/[\u00e2\u00c2]\u0080\u0094|â€”/g, "\u2014").replace(/[\u00e2\u00c2]\u0080\u0093|â€“/g, "\u2013").replace(/[\u00e2\u00c2]\u0080\u00a2|â€¢/g, "\u2022").replace(/[\u00e2\u00c2]\u0080[\u0098\u0099]|â€˜|â€™/g, "'").replace(/[\u00e2\u00c2]\u0080[\u009c\u009d]|â€œ|â€/g, '"');
   }
 };
 var documentExtractionService = new DocumentExtractionService();
@@ -12602,7 +12602,7 @@ var ImportRepository = class {
           storageKey: updates.storageKey
         },
         ...updates?.extractedText !== void 0 && {
-          extractedText: updates.extractedText
+          extractedText: updates.extractedText?.replace(/\0/g, "")
         },
         ...updates?.parseConfidence !== void 0 && {
           parseConfidence: updates.parseConfidence
@@ -12611,7 +12611,7 @@ var ImportRepository = class {
           resumeId: updates.resumeId
         },
         ...updates?.errorMessage !== void 0 && {
-          errorMessage: updates.errorMessage
+          errorMessage: updates.errorMessage?.replace(/\0/g, "")
         },
         ...updates?.errorCode !== void 0 && {
           errorCode: updates.errorCode
@@ -13222,12 +13222,16 @@ var ResumeImportService = class {
       logger.info(
         `[ResumeImport] Document extracted. pages=${extracted.actualPageCount}, words=${extracted.totalWords}, chars=${extracted.totalCharacters}`
       );
+      const cleanStructuredText = (extracted.structuredText || "").replace(
+        /\0/g,
+        ""
+      );
       importRecord = await importRepository.updateStatus(
         importRecord.id,
         ImportStatus.PARSING,
-        { extractedText: extracted.structuredText }
+        { extractedText: cleanStructuredText }
       );
-      const prompt = buildResumeParserUserPrompt(extracted.structuredText);
+      const prompt = buildResumeParserUserPrompt(cleanStructuredText);
       const aiProvider = getAIProvider();
       let aiResult;
       try {

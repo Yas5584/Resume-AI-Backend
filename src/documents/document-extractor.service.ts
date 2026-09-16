@@ -226,8 +226,8 @@ export class DocumentExtractionService implements DocumentExtractor {
       pages,
       totalCharacters,
       totalWords,
-      rawText,
-      structuredText,
+      rawText: rawText.replace(/\0/g, ""),
+      structuredText: structuredText.replace(/\0/g, ""),
       warnings,
       isScannedOrImageOnly,
       metadata: {
@@ -379,6 +379,7 @@ export class DocumentExtractionService implements DocumentExtractor {
    */
   private normalizeEncodingArtifacts(text: string): string {
     return text
+      .replace(/\0/g, "")
       .replace(/[\u00e2\u00c2]\u0080\u0094|â€”/g, "—")
       .replace(/[\u00e2\u00c2]\u0080\u0093|â€“/g, "–")
       .replace(/[\u00e2\u00c2]\u0080\u00a2|â€¢/g, "•")

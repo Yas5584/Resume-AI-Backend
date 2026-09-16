@@ -153,14 +153,19 @@ export class ResumeImportService {
         `[ResumeImport] Document extracted. pages=${extracted.actualPageCount}, words=${extracted.totalWords}, chars=${extracted.totalCharacters}`,
       );
 
+      const cleanStructuredText = (extracted.structuredText || "").replace(
+        /\0/g,
+        "",
+      );
+
       importRecord = await importRepository.updateStatus(
         importRecord.id,
         ImportStatus.PARSING,
-        { extractedText: extracted.structuredText },
+        { extractedText: cleanStructuredText },
       );
 
       // 10. Build AI prompt with page demarcations and call provider
-      const prompt = buildResumeParserUserPrompt(extracted.structuredText);
+      const prompt = buildResumeParserUserPrompt(cleanStructuredText);
       const aiProvider = getAIProvider();
       let aiResult: any;
       try {
