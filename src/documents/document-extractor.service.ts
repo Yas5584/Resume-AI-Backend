@@ -16,6 +16,16 @@ import {
  */
 export class DocumentExtractionService implements DocumentExtractor {
   async extractPdf(buffer: Buffer): Promise<ExtractedDocument> {
+    if (!(globalThis as any).pdfjsWorker) {
+      try {
+        // @ts-ignore - dynamic worker import for Node.js / Vercel Lambda
+        const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+        (globalThis as any).pdfjsWorker = worker;
+      } catch {
+        // Allow fallback if worker import fails
+      }
+    }
+
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     let doc: any;

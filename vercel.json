@@ -2,6 +2,11 @@
   "version": 2,
   "framework": null,
   "buildCommand": "npm run build",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "node_modules/pdfjs-dist/legacy/build/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

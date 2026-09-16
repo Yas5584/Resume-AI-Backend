@@ -8829,6 +8829,13 @@ var jobService = new JobService();
 import mammoth from "mammoth";
 var DocumentExtractionService = class {
   async extractPdf(buffer) {
+    if (!globalThis.pdfjsWorker) {
+      try {
+        const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+        globalThis.pdfjsWorker = worker;
+      } catch {
+      }
+    }
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     let doc;
