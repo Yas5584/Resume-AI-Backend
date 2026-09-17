@@ -68,3 +68,52 @@ export const SubscriptionTier = {
 
 export type SubscriptionTierType =
   (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
+
+// Phase 10: Resume Quality & ATS Readiness Constants
+export const ResumeQualityCategory = {
+  ATS_STRUCTURE: "ATS_STRUCTURE",
+  CONTENT_QUALITY: "CONTENT_QUALITY",
+  EXPERIENCE_QUALITY: "EXPERIENCE_QUALITY",
+  SKILLS_KEYWORDS: "SKILLS_KEYWORDS",
+  EDUCATION_CERTIFICATIONS: "EDUCATION_CERTIFICATIONS",
+  CONTACT_LINKS: "CONTACT_LINKS",
+  FORMATTING_PARSEABILITY: "FORMATTING_PARSEABILITY",
+  CONSISTENCY: "CONSISTENCY",
+} as const;
+
+export type ResumeQualityCategoryType =
+  (typeof ResumeQualityCategory)[keyof typeof ResumeQualityCategory];
+
+export const FindingSeverity = {
+  CRITICAL: "CRITICAL",
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  LOW: "LOW",
+  INFO: "INFO",
+} as const;
+
+export type FindingSeverityType =
+  (typeof FindingSeverity)[keyof typeof FindingSeverity];
+
+/**
+ * Centralized weights model for Resume Quality Scoring.
+ * Total strictly equals 1.00 (100%).
+ */
+export const RESUME_QUALITY_WEIGHTS: Record<ResumeQualityCategoryType, number> = {
+  ATS_STRUCTURE: 0.20,
+  CONTENT_QUALITY: 0.20,
+  EXPERIENCE_QUALITY: 0.20,
+  SKILLS_KEYWORDS: 0.15,
+  EDUCATION_CERTIFICATIONS: 0.10,
+  CONTACT_LINKS: 0.05,
+  FORMATTING_PARSEABILITY: 0.05,
+  CONSISTENCY: 0.05,
+} as const;
+
+export const ResumeQualityReportStatus = {
+  CURRENT: "CURRENT",
+  STALE: "STALE",
+} as const;
+
+export type ResumeQualityReportStatusType =
+  (typeof ResumeQualityReportStatus)[keyof typeof ResumeQualityReportStatus];

@@ -9,6 +9,7 @@ import {
   JobAnalysisStatus,
   StrategyApprovalStatus,
   ContentProposalStatus,
+  ResumeQualityReportStatus,
 } from "@prisma/client";
 
 declare global {
@@ -37,5 +38,6 @@ export {
   JobAnalysisStatus,
   StrategyApprovalStatus,
   ContentProposalStatus,
+  ResumeQualityReportStatus,
 };
 export * from "@prisma/client";

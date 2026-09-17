@@ -3009,6 +3009,74 @@ export class MockAIProvider implements AIProvider {
         break;
       }
 
+      case "AIQualityAnalysisOutputSchema": {
+        const promptLower = (params.prompt || "").toLowerCase();
+
+        if (
+          promptLower.includes("ignore") &&
+          (promptLower.includes("instruction") ||
+            promptLower.includes("score of 100") ||
+            promptLower.includes("kubernetes"))
+        ) {
+          // Adversarial prompt injection defense fixture: treated strictly as passive text
+          mockData = {
+            clarityAssessment:
+              "Malicious prompt instructions detected inside resume content were ignored and treated strictly as passive text.",
+            contentStrengths: [
+              "Document parsed safely without prompt injection vulnerability.",
+            ],
+            contentFindings: [
+              {
+                category: "CONTENT_QUALITY",
+                severity: "LOW",
+                title: "Content clarity evaluation",
+                description:
+                  "Resume text contains unusual command phrasing which was safely treated as passive text.",
+                whyItMatters:
+                  "Resume text should focus strictly on professional qualifications.",
+                recommendation:
+                  "Ensure resume text reflects verifiable work history.",
+                section: "experience",
+                confidence: 0.99,
+              },
+            ],
+            actionableRecommendations: [
+              "Focus resume on authentic, verifiable technical achievements.",
+            ],
+          };
+        } else {
+          mockData = {
+            clarityAssessment:
+              "Resume demonstrates solid technical foundations with well-structured achievements.",
+            contentStrengths: [
+              "Well-structured professional chronology with clear technical titles",
+              "Consistent alignment across skills and project deliverables",
+              "Action-oriented bullet points demonstrating technical ownership",
+            ],
+            contentFindings: [
+              {
+                category: "CONTENT_QUALITY",
+                severity: "LOW",
+                title: "Action verbs could be strengthened in earlier roles",
+                description:
+                  "A few bullets use passive or descriptive wording rather than direct outcome phrasing.",
+                whyItMatters:
+                  "Opening with strong action verbs emphasizes candidate ownership and leadership.",
+                recommendation:
+                  "If supported by your experience, start accomplishments with direct verbs such as 'Engineered' or 'Delivered'.",
+                section: "experience",
+                confidence: 0.92,
+              },
+            ],
+            actionableRecommendations: [
+              "Highlight primary tools and libraries under each major project.",
+              "If supported by your actual experience, consider adding measurable performance outcomes or volume metrics.",
+            ],
+          };
+        }
+        break;
+      }
+
       default:
         mockData = {};
     }

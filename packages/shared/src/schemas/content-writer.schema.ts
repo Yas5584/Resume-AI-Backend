@@ -31,6 +31,7 @@ export const ChangeTypeSchema = z.enum([
 export type ChangeType = z.infer<typeof ChangeTypeSchema>;
 
 export const ChangeSectionSchema = z.enum([
+  "personalInfo",
   "summary",
   "experience",
   "projects",

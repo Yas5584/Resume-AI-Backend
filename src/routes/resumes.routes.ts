@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { resumeController } from "../controllers/resume.controller.js";
+import { qualityController } from "../controllers/quality.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 
 export const resumeRoutes: FastifyPluginAsync = async (fastify) => {
@@ -43,4 +44,19 @@ export const resumeRoutes: FastifyPluginAsync = async (fastify) => {
     "/:id/versions/:versionNumber",
     resumeController.getVersion.bind(resumeController),
   );
+
+  // Phase 10: Resume Quality & ATS Readiness Analyzer
+  fastify.post(
+    "/:id/quality/analyze",
+    qualityController.analyze.bind(qualityController),
+  );
+  fastify.get(
+    "/:id/quality",
+    qualityController.getLatest.bind(qualityController),
+  );
+  fastify.delete(
+    "/:id/quality",
+    qualityController.delete.bind(qualityController),
+  );
 };
+

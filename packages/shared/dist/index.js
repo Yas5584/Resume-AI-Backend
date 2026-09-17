@@ -49,6 +49,37 @@ var SubscriptionTier = {
   PRO: "PRO",
   ENTERPRISE: "ENTERPRISE"
 };
+var ResumeQualityCategory = {
+  ATS_STRUCTURE: "ATS_STRUCTURE",
+  CONTENT_QUALITY: "CONTENT_QUALITY",
+  EXPERIENCE_QUALITY: "EXPERIENCE_QUALITY",
+  SKILLS_KEYWORDS: "SKILLS_KEYWORDS",
+  EDUCATION_CERTIFICATIONS: "EDUCATION_CERTIFICATIONS",
+  CONTACT_LINKS: "CONTACT_LINKS",
+  FORMATTING_PARSEABILITY: "FORMATTING_PARSEABILITY",
+  CONSISTENCY: "CONSISTENCY"
+};
+var FindingSeverity = {
+  CRITICAL: "CRITICAL",
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  LOW: "LOW",
+  INFO: "INFO"
+};
+var RESUME_QUALITY_WEIGHTS = {
+  ATS_STRUCTURE: 0.2,
+  CONTENT_QUALITY: 0.2,
+  EXPERIENCE_QUALITY: 0.2,
+  SKILLS_KEYWORDS: 0.15,
+  EDUCATION_CERTIFICATIONS: 0.1,
+  CONTACT_LINKS: 0.05,
+  FORMATTING_PARSEABILITY: 0.05,
+  CONSISTENCY: 0.05
+};
+var ResumeQualityReportStatus = {
+  CURRENT: "CURRENT",
+  STALE: "STALE"
+};
 
 // packages/shared/src/schemas/resume.schema.ts
 import { z } from "zod";
@@ -1782,6 +1813,7 @@ var ChangeTypeSchema = z10.enum([
   "REORDER"
 ]);
 var ChangeSectionSchema = z10.enum([
+  "personalInfo",
   "summary",
   "experience",
   "projects",
@@ -1917,6 +1949,122 @@ var SectionRegenerationResponseSchema = z10.object({
   unsupportedClaimsCount: z10.number().int().min(0).default(0)
 });
 
+// packages/shared/src/schemas/quality.schema.ts
+import { z as z11 } from "zod";
+var ResumeQualityCategorySchema = z11.nativeEnum(ResumeQualityCategory);
+var FindingSeveritySchema = z11.nativeEnum(FindingSeverity);
+var ResumeQualityReportStatusSchema = z11.nativeEnum(
+  ResumeQualityReportStatus
+);
+var QualityStatusLabelSchema = z11.enum([
+  "Excellent",
+  "Good",
+  "Needs Improvement",
+  "Needs Attention"
+]);
+var FindingClassificationSchema = z11.enum([
+  "PASSIVE_VOICE",
+  "WEAK_ACTION_VERB",
+  "VAGUE_WORDING",
+  "LOW_SPECIFICITY"
+]);
+var TechnologySourceSchema = z11.enum([
+  "EXPERIENCE",
+  "PROJECT",
+  "SKILLS",
+  "CERTIFICATION",
+  "OTHER"
+]);
+var CATEGORY_DISPLAY_NAMES = {
+  ATS_STRUCTURE: "ATS Structure",
+  CONTENT_QUALITY: "Content Quality",
+  EXPERIENCE_QUALITY: "Experience Quality",
+  SKILLS_KEYWORDS: "Skills & Keywords",
+  EDUCATION_CERTIFICATIONS: "Education & Certifications",
+  CONTACT_LINKS: "Contact & Links",
+  FORMATTING_PARSEABILITY: "Formatting / Parseability",
+  CONSISTENCY: "Consistency"
+};
+var ResumeQualityFindingSchema = z11.object({
+  id: z11.string(),
+  category: ResumeQualityCategorySchema,
+  severity: FindingSeveritySchema,
+  title: z11.string(),
+  description: z11.string(),
+  whyItMatters: z11.string().optional(),
+  recommendation: z11.string(),
+  section: ChangeSectionSchema.optional(),
+  itemId: z11.string().optional(),
+  field: z11.string().optional(),
+  evidence: z11.string().optional(),
+  confidence: z11.number().min(0).max(1).optional(),
+  classification: FindingClassificationSchema.optional(),
+  source: TechnologySourceSchema.optional()
+});
+var CategoryScoreSchema = z11.object({
+  category: ResumeQualityCategorySchema,
+  name: z11.string(),
+  score: z11.number().min(0).max(100),
+  maxScore: z11.number().default(100),
+  weight: z11.number().min(0).max(1),
+  status: QualityStatusLabelSchema,
+  findings: z11.array(ResumeQualityFindingSchema),
+  recommendations: z11.array(z11.string())
+});
+var JobMatchSummarySchema = z11.object({
+  matchScore: z11.number(),
+  matchId: z11.string().optional(),
+  jobId: z11.string().optional(),
+  jobTitle: z11.string().optional(),
+  company: z11.string().nullable().optional(),
+  missingKeywords: z11.array(z11.string()).default([]),
+  missingRequirements: z11.array(z11.string()).default([])
+});
+var ResumeQualityReportSchema = z11.object({
+  id: z11.string(),
+  resumeId: z11.string(),
+  resumeVersionId: z11.string().nullable().optional(),
+  jobId: z11.string().nullable().optional(),
+  overallScore: z11.number().min(0).max(100),
+  status: ResumeQualityReportStatusSchema,
+  statusLabel: QualityStatusLabelSchema,
+  summary: z11.string(),
+  categories: z11.record(ResumeQualityCategorySchema, CategoryScoreSchema),
+  strengths: z11.array(z11.string()).default([]),
+  criticalIssuesCount: z11.number().default(0),
+  findings: z11.array(ResumeQualityFindingSchema).default([]),
+  contentHash: z11.string(),
+  jobHash: z11.string().nullable().optional(),
+  analyzedAt: z11.string(),
+  resumeUpdatedAt: z11.string(),
+  analyzerVersion: z11.string().default("1.0"),
+  scoringVersion: z11.string().default("1.0"),
+  jobMatch: JobMatchSummarySchema.nullable().optional()
+});
+var AnalyzeResumeQualityInputSchema = z11.object({
+  jobId: z11.string().uuid().optional(),
+  forceRefresh: z11.boolean().optional().default(false)
+});
+var AIQualityFindingSchema = z11.object({
+  category: ResumeQualityCategorySchema,
+  severity: FindingSeveritySchema,
+  title: z11.string(),
+  description: z11.string(),
+  whyItMatters: z11.string(),
+  recommendation: z11.string(),
+  section: ChangeSectionSchema.optional(),
+  itemId: z11.string().optional(),
+  field: z11.string().optional(),
+  evidence: z11.string().optional(),
+  confidence: z11.number().min(0).max(1).optional()
+});
+var AIQualityAnalysisOutputSchema = z11.object({
+  clarityAssessment: z11.string(),
+  contentStrengths: z11.array(z11.string()),
+  contentFindings: z11.array(AIQualityFindingSchema),
+  actionableRecommendations: z11.array(z11.string())
+});
+
 // packages/shared/src/utils/redirect.ts
 function getSafeRedirect(url) {
   if (!url || typeof url !== "string") return "/dashboard";
@@ -1927,6 +2075,8 @@ function getSafeRedirect(url) {
   return trimmed;
 }
 export {
+  AIQualityAnalysisOutputSchema,
+  AIQualityFindingSchema,
   AIUsageRecordSchema,
   ALLOWED_IMPORT_EXTENSIONS,
   ALLOWED_IMPORT_MIME_TYPES,
@@ -1937,13 +2087,16 @@ export {
   AccentColorSchema,
   AchievementSchema,
   AgentName,
+  AnalyzeResumeQualityInputSchema,
   ApiErrorPayloadSchema,
   ApiHealthResponseSchema,
   ApiResponseSchema,
   ApplyContentProposalInputSchema,
   BulletRewriteSchema,
   CANONICAL_TEMPLATE_IDS,
+  CATEGORY_DISPLAY_NAMES,
   COLOR_PALETTES,
+  CategoryScoreSchema,
   CertificationRequirementSchema,
   CertificationSchema,
   ChangeRiskSchema,
@@ -1980,6 +2133,9 @@ export {
   FactCheckResultSchema,
   FactualClaimCategorySchema,
   FactualClaimSchema,
+  FindingClassificationSchema,
+  FindingSeverity,
+  FindingSeveritySchema,
   FontFamilySchema,
   FontSizeSchema,
   GapClassificationEnum,
@@ -1992,6 +2148,7 @@ export {
   ImportStatusEnum,
   JobAnalysisSchema,
   JobKeywordSchema,
+  JobMatchSummarySchema,
   KeywordAlreadyCoveredItemSchema,
   KeywordCategoryEnum,
   KeywordClassificationEnum,
@@ -2031,6 +2188,8 @@ export {
   ProjectStrategySchema,
   ProtectedFactSchema,
   QualityReviewSchema,
+  QualityStatusLabelSchema,
+  RESUME_QUALITY_WEIGHTS,
   RESUME_STRATEGY_VERSION,
   RegenerateSectionInputSchema,
   RegisterRequestSchema,
@@ -2045,6 +2204,12 @@ export {
   ResumeContentChangeSchema,
   ResumeDataSchema,
   ResumeParseResultSchema,
+  ResumeQualityCategory,
+  ResumeQualityCategorySchema,
+  ResumeQualityFindingSchema,
+  ResumeQualityReportSchema,
+  ResumeQualityReportStatus,
+  ResumeQualityReportStatusSchema,
   ResumeSchema,
   ResumeSectionNameEnum,
   ResumeStrategySchema,
@@ -2071,6 +2236,7 @@ export {
   StrategyEvidenceSchema,
   StrategySchema,
   SubscriptionTier,
+  TechnologySourceSchema,
   TemplateConfigSchema,
   TemplateIdSchema,
   TriggerWorkflowRequestSchema,

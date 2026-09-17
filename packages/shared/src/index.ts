@@ -10,4 +10,5 @@ export * from "./schemas/template.schema.js";
 export * from "./schemas/import.schema.js";
 export * from "./schemas/strategy.schema.js";
 export * from "./schemas/content-writer.schema.js";
+export * from "./schemas/quality.schema.js";
 export * from "./utils/redirect.js";

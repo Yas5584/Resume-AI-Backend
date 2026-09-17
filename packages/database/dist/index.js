@@ -24,6 +24,7 @@ __export(index_exports, {
   JobAnalysisStatus: () => JobAnalysisStatus,
   Prisma: () => Prisma,
   PrismaClient: () => PrismaClient,
+  ResumeQualityReportStatus: () => ResumeQualityReportStatus,
   Role: () => Role,
   StrategyApprovalStatus: () => StrategyApprovalStatus,
   SubscriptionTier: () => SubscriptionTier,
@@ -40,6 +41,7 @@ __export(client_exports, {
   JobAnalysisStatus: () => JobAnalysisStatus,
   Prisma: () => Prisma,
   PrismaClient: () => PrismaClient,
+  ResumeQualityReportStatus: () => ResumeQualityReportStatus,
   Role: () => Role,
   StrategyApprovalStatus: () => StrategyApprovalStatus,
   SubscriptionTier: () => SubscriptionTier,
@@ -58,7 +60,8 @@ import {
   ImportStatus,
   JobAnalysisStatus,
   StrategyApprovalStatus,
-  ContentProposalStatus
+  ContentProposalStatus,
+  ResumeQualityReportStatus
 } from "@prisma/client";
 import * as client_star from "@prisma/client";
 var prisma = globalThis.prismaGlobal ?? new PrismaClient({
@@ -74,6 +77,7 @@ export {
   JobAnalysisStatus,
   Prisma,
   PrismaClient,
+  ResumeQualityReportStatus,
   Role,
   StrategyApprovalStatus,
   SubscriptionTier,

@@ -65,6 +65,11 @@ enum ContentProposalStatus {
   APPLIED
 }
 
+enum ResumeQualityReportStatus {
+  CURRENT
+  STALE
+}
+
 model User {
   id               String           @id @default(uuid())
   email            String           @unique
@@ -89,6 +94,7 @@ model User {
   resumeImports       ResumeImport[]
   strategies          ResumeStrategy[]
   contentProposals    ContentProposal[]
+  qualityReports      ResumeQualityReport[]
 
   @@map("users")
 }
@@ -148,6 +154,7 @@ model Resume {
   jobDescriptions JobDescription[]
   strategies      ResumeStrategy[]
   contentProposals ContentProposal[]
+  qualityReports  ResumeQualityReport[]
 
   @@index([userId])
   @@map("resumes")
@@ -166,6 +173,7 @@ model ResumeVersion {
   resume                  Resume              @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   jobAnalyses             ResumeJobAnalysis[]
   appliedContentProposals ContentProposal[]
+  qualityReports          ResumeQualityReport[]
 
   @@unique([resumeId, versionNumber])
   @@index([resumeId])
@@ -189,11 +197,12 @@ model JobDescription {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resume      Resume?             @relation(fields: [resumeId], references: [id], onDelete: SetNull)
-  jobAnalyses ResumeJobAnalysis[]
-  strategies  ResumeStrategy[]
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume           Resume?             @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobAnalyses      ResumeJobAnalysis[]
+  strategies       ResumeStrategy[]
   contentProposals ContentProposal[]
+  qualityReports   ResumeQualityReport[]
 
   @@index([userId])
   @@index([status])
@@ -392,4 +401,39 @@ model ResumeImport {
   @@index([userId])
   @@index([status])
   @@map("resume_imports")
+}
+
+model ResumeQualityReport {
+  id               String                    @id @default(uuid())
+  userId           String
+  resumeId         String
+  resumeVersionId  String?
+  jobId            String?
+  score            Float
+  categoryScores   Json                      // Detailed CategoryScore map
+  findings         Json                      // Array of ResumeQualityFinding
+  recommendations  Json                      // Key recommendations
+  strengths        Json                      // Array of strengths
+  contentHash      String                    // SHA-256 hash of analyzed resume content
+  jobHash          String?
+  status           ResumeQualityReportStatus @default(CURRENT)
+  resumeUpdatedAt  DateTime
+  analyzerVersion  String                    @default("1.0")
+  scoringVersion   String                    @default("1.0")
+  tokensUsed       Int                       @default(0)
+  processingTimeMs Int?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume        Resume          @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resumeVersion ResumeVersion?  @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+  job           JobDescription? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([resumeId])
+  @@index([jobId])
+  @@index([contentHash])
+  @@index([status])
+  @@map("resume_quality_reports")
 }
