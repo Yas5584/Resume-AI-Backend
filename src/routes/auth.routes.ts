@@ -32,7 +32,6 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
   fastify.post(
     "/logout",
-    { preHandler: [authenticate] },
     authController.logout.bind(authController),
   );
   fastify.get(

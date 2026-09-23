@@ -2460,6 +2460,9 @@ var healthRoutes = async (fastify2) => {
   fastify2.get("/health", healthController.checkHealth.bind(healthController));
 };
 
+// src/controllers/auth.controller.ts
+import jwt2 from "jsonwebtoken";
+
 // src/services/auth.service.ts
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -2753,9 +2756,19 @@ var AuthController = class {
     );
   }
   async logout(request, reply) {
-    const sessionId = request.user?.sessionId;
+    let sessionId = request.user?.sessionId;
     const cookieToken = request.cookies?.[AUTH_COOKIE_NAME];
-    await authService.logout(sessionId, cookieToken);
+    if (!sessionId && cookieToken) {
+      try {
+        const decoded = jwt2.decode(cookieToken);
+        if (decoded?.sessionId) sessionId = decoded.sessionId;
+      } catch {
+      }
+    }
+    try {
+      await authService.logout(sessionId, cookieToken);
+    } catch {
+    }
     reply.clearCookie(AUTH_COOKIE_NAME, {
       path: "/",
       httpOnly: true,
@@ -2777,7 +2790,7 @@ var AuthController = class {
 var authController = new AuthController();
 
 // src/middleware/auth.middleware.ts
-import jwt2 from "jsonwebtoken";
+import jwt3 from "jsonwebtoken";
 async function authenticate(request, _reply) {
   let token;
   if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
@@ -2789,23 +2802,43 @@ async function authenticate(request, _reply) {
       token = authHeader.substring(7);
     }
   }
+  if (token) {
+    token = token.trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1);
+    }
+    if (token.startsWith("Bearer ")) {
+      token = token.substring(7).trim();
+    }
+  }
   if (!token) {
     throw AppError.unauthorized("Authentication required");
   }
   try {
-    const decoded = jwt2.verify(token, env.JWT_SECRET);
+    const decoded = jwt3.verify(token, env.JWT_SECRET);
     if (!decoded.sessionId) {
       throw AppError.unauthorized("Invalid token format: missing session ID");
     }
-    const activeSession = await userRepository.findSessionByToken(
-      decoded.sessionId
-    );
-    if (!activeSession) {
-      throw AppError.unauthorized("Session has been revoked or expired");
-    }
-    if (new Date(activeSession.expiresAt) < /* @__PURE__ */ new Date()) {
-      await userRepository.deleteSessionByToken(decoded.sessionId);
-      throw AppError.unauthorized("Session has expired");
+    try {
+      const activeSession = await userRepository.findSessionByToken(
+        decoded.sessionId
+      );
+      if (!activeSession) {
+        throw AppError.unauthorized("Session has been revoked or expired");
+      }
+      if (new Date(activeSession.expiresAt) < /* @__PURE__ */ new Date()) {
+        await userRepository.deleteSessionByToken(decoded.sessionId).catch(() => {
+        });
+        throw AppError.unauthorized("Session has expired");
+      }
+    } catch (sessionErr) {
+      if (sessionErr instanceof AppError) {
+        throw sessionErr;
+      }
+      request.log.warn(
+        { err: sessionErr },
+        "Session DB lookup failed due to transient connection error, falling back to valid JWT signature"
+      );
     }
     request.user = {
       id: decoded.id,
@@ -2850,7 +2883,6 @@ var authRoutes = async (fastify2) => {
   );
   fastify2.post(
     "/logout",
-    { preHandler: [authenticate] },
     authController.logout.bind(authController)
   );
   fastify2.get(

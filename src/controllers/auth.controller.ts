@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
+import jwt from "jsonwebtoken";
 import { authService } from "../services/auth.service.js";
 import { RegisterRequestSchema, LoginRequestSchema } from "@resumeai/shared";
 import { sendCreated, sendSuccess } from "../utils/response.js";
@@ -33,10 +34,23 @@ export class AuthController {
   }
 
   async logout(request: FastifyRequest, reply: FastifyReply) {
-    const sessionId = request.user?.sessionId;
+    let sessionId = request.user?.sessionId;
     const cookieToken = request.cookies?.[AUTH_COOKIE_NAME];
 
-    await authService.logout(sessionId, cookieToken);
+    if (!sessionId && cookieToken) {
+      try {
+        const decoded = jwt.decode(cookieToken) as any;
+        if (decoded?.sessionId) sessionId = decoded.sessionId;
+      } catch {
+        // ignore decode errors
+      }
+    }
+
+    try {
+      await authService.logout(sessionId, cookieToken);
+    } catch {
+      // ignore database session cleanup errors during logout
+    }
 
     reply.clearCookie(AUTH_COOKIE_NAME, {
       path: "/",

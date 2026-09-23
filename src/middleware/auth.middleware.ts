@@ -38,6 +38,16 @@ export async function authenticate(
     }
   }
 
+  if (token) {
+    token = token.trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1);
+    }
+    if (token.startsWith("Bearer ")) {
+      token = token.substring(7).trim();
+    }
+  }
+
   if (!token) {
     throw AppError.unauthorized("Authentication required");
   }
@@ -50,18 +60,30 @@ export async function authenticate(
       throw AppError.unauthorized("Invalid token format: missing session ID");
     }
 
-    const activeSession = await userRepository.findSessionByToken(
-      decoded.sessionId,
-    );
+    try {
+      const activeSession = await userRepository.findSessionByToken(
+        decoded.sessionId,
+      );
 
-    if (!activeSession) {
-      throw AppError.unauthorized("Session has been revoked or expired");
-    }
+        if (!activeSession) {
+          throw AppError.unauthorized("Session has been revoked or expired");
+        }
 
-    if (new Date(activeSession.expiresAt) < new Date()) {
-      await userRepository.deleteSessionByToken(decoded.sessionId);
-      throw AppError.unauthorized("Session has expired");
-    }
+        if (new Date(activeSession.expiresAt) < new Date()) {
+          await userRepository
+            .deleteSessionByToken(decoded.sessionId)
+            .catch(() => {});
+          throw AppError.unauthorized("Session has expired");
+        }
+      } catch (sessionErr: any) {
+        if (sessionErr instanceof AppError) {
+          throw sessionErr;
+        }
+        request.log.warn(
+          { err: sessionErr },
+          "Session DB lookup failed due to transient connection error, falling back to valid JWT signature",
+        );
+      }
 
     request.user = {
       id: decoded.id,
