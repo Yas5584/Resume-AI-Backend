@@ -16,7 +16,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
 
-// src/polyfills.ts
+// apps/api/src/polyfills.ts
 if (typeof globalThis !== "undefined") {
   if (!globalThis.DOMMatrix) {
     globalThis.DOMMatrix = class DOMMatrix {
@@ -104,7 +104,7 @@ if (typeof globalThis !== "undefined") {
   }
 }
 
-// src/app.ts
+// apps/api/src/app.ts
 import fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -114,7 +114,7 @@ import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import { Redis } from "ioredis";
 
-// src/config/index.ts
+// apps/api/src/config/index.ts
 import { z } from "zod";
 import dotenv from "dotenv";
 import path from "path";
@@ -227,10 +227,10 @@ function loadConfig() {
 }
 var env = loadConfig();
 
-// src/errors/index.ts
+// apps/api/src/errors/index.ts
 import { ZodError } from "zod";
 
-// packages/shared/src/constants/index.ts
+// apps/api/packages/shared/src/constants/index.ts
 var VerificationStatus = {
   SUPPORTED: "SUPPORTED",
   UNSUPPORTED: "UNSUPPORTED",
@@ -308,7 +308,7 @@ var ResumeQualityReportStatus = {
   STALE: "STALE"
 };
 
-// packages/shared/src/schemas/resume.schema.ts
+// apps/api/packages/shared/src/schemas/resume.schema.ts
 import { z as z2 } from "zod";
 function generateId() {
   return Math.random().toString(36).substring(2, 11);
@@ -827,7 +827,7 @@ function createDefaultResumeData(fullName = "") {
   };
 }
 
-// packages/shared/src/schemas/job.schema.ts
+// apps/api/packages/shared/src/schemas/job.schema.ts
 import { z as z3 } from "zod";
 var MIN_JOB_DESCRIPTION_CHARS = 50;
 var MAX_JOB_DESCRIPTION_CHARS = 3e4;
@@ -1092,7 +1092,7 @@ var MatchAnalysisSchema = z3.object({
   tailoringRecommendations: z3.array(z3.string()).default([])
 });
 
-// packages/shared/src/schemas/ai.schema.ts
+// apps/api/packages/shared/src/schemas/ai.schema.ts
 import { z as z4 } from "zod";
 var StrategySchema = z4.object({
   targetAngle: z4.string().describe("Primary positioning narrative for candidate"),
@@ -1144,7 +1144,7 @@ var AIUsageRecordSchema = z4.object({
   timestamp: z4.string().datetime().default(() => (/* @__PURE__ */ new Date()).toISOString())
 });
 
-// packages/shared/src/schemas/evidence.schema.ts
+// apps/api/packages/shared/src/schemas/evidence.schema.ts
 import { z as z5 } from "zod";
 var VerificationStatusSchema = z5.enum([
   VerificationStatus.SUPPORTED,
@@ -1200,7 +1200,7 @@ var FactCheckResultSchema = z5.object({
   summary: z5.string().describe("Executive summary of fact guard review")
 });
 
-// packages/shared/src/schemas/workflow-state.schema.ts
+// apps/api/packages/shared/src/schemas/workflow-state.schema.ts
 import { z as z6 } from "zod";
 var RevisionHistoryItemSchema = z6.object({
   revisionNumber: z6.number(),
@@ -1262,10 +1262,10 @@ var ResumeWorkflowStateSchema = z6.object({
   completedAt: z6.string().datetime().optional()
 });
 
-// packages/shared/src/schemas/api.schema.ts
+// apps/api/packages/shared/src/schemas/api.schema.ts
 import { z as z8 } from "zod";
 
-// packages/shared/src/schemas/template.schema.ts
+// apps/api/packages/shared/src/schemas/template.schema.ts
 import { z as z7 } from "zod";
 var TemplateIdSchema = z7.enum([
   "modern",
@@ -1406,7 +1406,7 @@ function getDefaultTemplateConfig(templateId) {
   }
 }
 
-// packages/shared/src/schemas/api.schema.ts
+// apps/api/packages/shared/src/schemas/api.schema.ts
 var ApiHealthResponseSchema = z8.object({
   success: z8.literal(true),
   service: z8.literal("resumeai-api"),
@@ -1491,7 +1491,7 @@ var UserProfileResponseSchema = z8.object({
   createdAt: z8.string().datetime()
 });
 
-// packages/shared/src/schemas/import.schema.ts
+// apps/api/packages/shared/src/schemas/import.schema.ts
 import { z as z9 } from "zod";
 var ImportStatusEnum = z9.enum([
   "PENDING",
@@ -1644,7 +1644,7 @@ var ImportMetadataSchema = z9.object({
   aiTokensUsed: z9.number().default(0)
 });
 
-// packages/shared/src/schemas/strategy.schema.ts
+// apps/api/packages/shared/src/schemas/strategy.schema.ts
 import { z as z10 } from "zod";
 var RESUME_STRATEGY_VERSION = "v1";
 var StrategyApprovalStatusEnum = z10.enum([
@@ -1995,7 +1995,7 @@ var UpdateStrategyStatusRequestSchema = z10.object({
   status: StrategyApprovalStatusEnum
 });
 
-// packages/shared/src/schemas/content-writer.schema.ts
+// apps/api/packages/shared/src/schemas/content-writer.schema.ts
 import { z as z11 } from "zod";
 var ContentProposalStatusSchema = z11.enum([
   "DRAFT",
@@ -2150,7 +2150,7 @@ var SectionRegenerationResponseSchema = z11.object({
   unsupportedClaimsCount: z11.number().int().min(0).default(0)
 });
 
-// packages/shared/src/schemas/quality.schema.ts
+// apps/api/packages/shared/src/schemas/quality.schema.ts
 import { z as z12 } from "zod";
 var ResumeQualityCategorySchema = z12.nativeEnum(ResumeQualityCategory);
 var FindingSeveritySchema = z12.nativeEnum(FindingSeverity);
@@ -2266,7 +2266,7 @@ var AIQualityAnalysisOutputSchema = z12.object({
   actionableRecommendations: z12.array(z12.string())
 });
 
-// src/utils/cookies.ts
+// apps/api/src/utils/cookies.ts
 var AUTH_COOKIE_NAME = "resumeai_session";
 function parseDurationToSeconds(durationStr) {
   const match = durationStr.match(/^(\d+)([smhdwy])?$/);
@@ -2304,7 +2304,7 @@ function getAuthCookieOptions() {
   };
 }
 
-// src/errors/index.ts
+// apps/api/src/errors/index.ts
 var AppError = class _AppError extends Error {
   statusCode;
   code;
@@ -2399,7 +2399,7 @@ function errorHandler(error, request, reply) {
   });
 }
 
-// src/utils/logger.ts
+// apps/api/src/utils/logger.ts
 var loggerConfig = {
   level: env.LOG_LEVEL,
   transport: env.NODE_ENV === "development" ? {
@@ -2431,7 +2431,7 @@ var logger = {
   }
 };
 
-// src/services/health.service.ts
+// apps/api/src/services/health.service.ts
 var HealthService = class {
   startTime = Date.now();
   getHealth() {
@@ -2446,7 +2446,7 @@ var HealthService = class {
 };
 var healthService = new HealthService();
 
-// src/controllers/health.controller.ts
+// apps/api/src/controllers/health.controller.ts
 var HealthController = class {
   async checkHealth(_request, reply) {
     const health = healthService.getHealth();
@@ -2455,20 +2455,20 @@ var HealthController = class {
 };
 var healthController = new HealthController();
 
-// src/routes/health.routes.ts
+// apps/api/src/routes/health.routes.ts
 var healthRoutes = async (fastify2) => {
   fastify2.get("/health", healthController.checkHealth.bind(healthController));
 };
 
-// src/controllers/auth.controller.ts
+// apps/api/src/controllers/auth.controller.ts
 import jwt2 from "jsonwebtoken";
 
-// src/services/auth.service.ts
+// apps/api/src/services/auth.service.ts
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// packages/database/src/index.ts
+// apps/api/packages/database/src/index.ts
 var src_exports = {};
 __export(src_exports, {
   ContentProposalStatus: () => ContentProposalStatus,
@@ -2485,7 +2485,7 @@ __export(src_exports, {
   prisma: () => prisma
 });
 
-// packages/database/src/client.ts
+// apps/api/packages/database/src/client.ts
 var client_exports = {};
 __export(client_exports, {
   ContentProposalStatus: () => ContentProposalStatus,
@@ -2521,10 +2521,10 @@ var prisma = globalThis.prismaGlobal ?? new PrismaClient({
 });
 globalThis.prismaGlobal = prisma;
 
-// packages/database/src/index.ts
+// apps/api/packages/database/src/index.ts
 __reExport(src_exports, client_exports);
 
-// src/repositories/user.repository.ts
+// apps/api/src/repositories/user.repository.ts
 var UserRepository = class {
   async findById(id) {
     return prisma.user.findUnique({
@@ -2598,7 +2598,7 @@ var UserRepository = class {
 };
 var userRepository = new UserRepository();
 
-// src/services/auth.service.ts
+// apps/api/src/services/auth.service.ts
 function toAuthUser(user) {
   return {
     id: user.id,
@@ -2720,7 +2720,7 @@ var AuthService = class {
 };
 var authService = new AuthService();
 
-// src/utils/response.ts
+// apps/api/src/utils/response.ts
 function sendSuccess(reply, data, statusCode = 200, message) {
   return reply.status(statusCode).send({
     success: true,
@@ -2732,7 +2732,7 @@ function sendCreated(reply, data, message) {
   return sendSuccess(reply, data, 201, message);
 }
 
-// src/controllers/auth.controller.ts
+// apps/api/src/controllers/auth.controller.ts
 var AuthController = class {
   async register(request, reply) {
     const body = RegisterRequestSchema.parse(request.body);
@@ -2789,9 +2789,9 @@ var AuthController = class {
 };
 var authController = new AuthController();
 
-// src/middleware/auth.middleware.ts
+// apps/api/src/middleware/auth.middleware.ts
 import jwt3 from "jsonwebtoken";
-async function authenticate(request, _reply) {
+async function authenticate(request, reply) {
   let token;
   if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
     token = request.cookies[AUTH_COOKIE_NAME];
@@ -2847,6 +2847,14 @@ async function authenticate(request, _reply) {
       sessionId: decoded.sessionId ?? ""
     };
   } catch (err) {
+    if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
+      reply.clearCookie(AUTH_COOKIE_NAME, {
+        path: "/",
+        httpOnly: true,
+        secure: env.COOKIE_SAME_SITE === "none" ? true : env.NODE_ENV === "production",
+        sameSite: env.COOKIE_SAME_SITE
+      });
+    }
     if (err instanceof AppError) {
       throw err;
     }
@@ -2854,7 +2862,7 @@ async function authenticate(request, _reply) {
   }
 }
 
-// src/routes/auth.routes.ts
+// apps/api/src/routes/auth.routes.ts
 var authRoutes = async (fastify2) => {
   const authRateLimitMax = env.NODE_ENV === "test" ? 1e3 : 10;
   fastify2.post(
@@ -2892,7 +2900,7 @@ var authRoutes = async (fastify2) => {
   );
 };
 
-// src/repositories/resume.repository.ts
+// apps/api/src/repositories/resume.repository.ts
 var ResumeRepository = class {
   /**
    * Strictly enforces userId ownership check.
@@ -3058,7 +3066,7 @@ var ResumeRepository = class {
 };
 var resumeRepository = new ResumeRepository();
 
-// src/services/resume.service.ts
+// apps/api/src/services/resume.service.ts
 var ResumeService = class {
   constructor(resumeRepo = resumeRepository) {
     this.resumeRepo = resumeRepo;
@@ -3177,10 +3185,10 @@ var ResumeService = class {
 };
 var resumeService = new ResumeService();
 
-// src/export/pdf-exporter.ts
+// apps/api/src/export/pdf-exporter.ts
 import { chromium } from "playwright";
 
-// src/export/html-renderer.ts
+// apps/api/src/export/html-renderer.ts
 function escapeHtml(str) {
   if (str === null || str === void 0) return "";
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -3681,7 +3689,7 @@ function renderResumeToHtml(data, config, title) {
 </html>`;
 }
 
-// src/export/sanitize-filename.ts
+// apps/api/src/export/sanitize-filename.ts
 function sanitizeFilename(title, ext) {
   if (!title || typeof title !== "string") {
     return `Resume.${ext}`;
@@ -3699,7 +3707,7 @@ function sanitizeFilename(title, ext) {
   return `${sanitized}.${ext}`;
 }
 
-// src/export/pdf-exporter.ts
+// apps/api/src/export/pdf-exporter.ts
 var CONTAINER_CHROMIUM_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
@@ -3775,7 +3783,7 @@ var PdfResumeExporter = class {
 };
 var pdfResumeExporter = new PdfResumeExporter();
 
-// src/export/puppeteer-pdf-exporter.ts
+// apps/api/src/export/puppeteer-pdf-exporter.ts
 import puppeteer from "puppeteer-core";
 import chromium2 from "@sparticuz/chromium";
 import fs from "fs";
@@ -3940,7 +3948,7 @@ var PuppeteerPdfResumeExporter = class {
 };
 var puppeteerPdfResumeExporter = new PuppeteerPdfResumeExporter();
 
-// src/export/pdf-exporter.factory.ts
+// apps/api/src/export/pdf-exporter.factory.ts
 function getPdfExporter(override) {
   const selected = override || env.PDF_RENDERER || "playwright";
   switch (selected) {
@@ -3952,7 +3960,7 @@ function getPdfExporter(override) {
   }
 }
 
-// src/export/docx-exporter.ts
+// apps/api/src/export/docx-exporter.ts
 import {
   Document,
   Packer,
@@ -4626,7 +4634,7 @@ var DocxResumeExporter = class {
 };
 var docxResumeExporter = new DocxResumeExporter();
 
-// src/export/export.service.ts
+// apps/api/src/export/export.service.ts
 var ResumeExportService = class {
   constructor(resumeRepo = resumeRepository, pdfExporter = getPdfExporter(), docxExporter = docxResumeExporter) {
     this.resumeRepo = resumeRepo;
@@ -4654,7 +4662,7 @@ var ResumeExportService = class {
 };
 var resumeExportService = new ResumeExportService();
 
-// src/controllers/resume.controller.ts
+// apps/api/src/controllers/resume.controller.ts
 var ResumeController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -4768,10 +4776,10 @@ var ResumeController = class {
 };
 var resumeController = new ResumeController();
 
-// src/services/quality.service.ts
+// apps/api/src/services/quality.service.ts
 import crypto2 from "crypto";
 
-// src/repositories/job.repository.ts
+// apps/api/src/repositories/job.repository.ts
 var JobRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.jobDescription.findFirst({
@@ -4866,7 +4874,7 @@ var JobRepository = class {
 };
 var jobRepository = new JobRepository();
 
-// src/repositories/match.repository.ts
+// apps/api/src/repositories/match.repository.ts
 var MatchRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeJobAnalysis.findFirst({
@@ -5006,7 +5014,7 @@ var MatchRepository = class {
 };
 var matchRepository = new MatchRepository();
 
-// src/repositories/quality-report.repository.ts
+// apps/api/src/repositories/quality-report.repository.ts
 var QualityReportRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeQualityReport.findFirst({
@@ -5164,7 +5172,7 @@ var QualityReportRepository = class {
 };
 var qualityReportRepository = new QualityReportRepository();
 
-// src/quality/checks/ats-structure.check.ts
+// apps/api/src/quality/checks/ats-structure.check.ts
 function checkATSStructure(data) {
   const findings = [];
   let passed = 0;
@@ -5311,7 +5319,7 @@ function checkATSStructure(data) {
   };
 }
 
-// src/quality/checks/contact-links.check.ts
+// apps/api/src/quality/checks/contact-links.check.ts
 var EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 var PHONE_REGEX = /[\d+()\-.\s]{7,}/;
 function isValidUrlSyntax(urlStr) {
@@ -5542,7 +5550,7 @@ function checkContactAndLinks(data) {
   };
 }
 
-// src/ai/ats-validator/ats-validator.ts
+// apps/api/src/ai/ats-validator/ats-validator.ts
 var STRONG_ACTION_VERBS = /* @__PURE__ */ new Set([
   "accelerated",
   "achieved",
@@ -5854,7 +5862,7 @@ function validateATS(text, section, options) {
   };
 }
 
-// src/quality/checks/experience.check.ts
+// apps/api/src/quality/checks/experience.check.ts
 var PASSIVE_VOICE_REGEX = /\b(?:was|were|is|are|been|being)\s+(?:tasked|assigned|asked|required|built|developed|managed|engineered|given|chosen|directed|selected|deployed|created)\b/i;
 var PASSIVE_BY_REGEX = /\b(?:developed|created|managed|maintained|led|directed|engineered|built|implemented)\s+by\b/i;
 var WEAK_ACTION_VERB_PHRASES = [
@@ -6231,7 +6239,7 @@ function checkExperienceAndContent(data) {
   };
 }
 
-// src/quality/checks/skills.check.ts
+// apps/api/src/quality/checks/skills.check.ts
 function checkSkills(data) {
   const findings = [];
   const skillGroups = data.skills || [];
@@ -6461,7 +6469,7 @@ function checkSkills(data) {
   };
 }
 
-// src/quality/checks/education.check.ts
+// apps/api/src/quality/checks/education.check.ts
 function checkEducationAndCertifications(data) {
   const findings = [];
   const educationList = data.education || [];
@@ -6568,7 +6576,7 @@ function checkEducationAndCertifications(data) {
   };
 }
 
-// src/quality/checks/formatting.check.ts
+// apps/api/src/quality/checks/formatting.check.ts
 var EMOJI_AND_DECORATIVE_REGEX2 = /[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1D400}-\u{1D7FF}]/u;
 var UNICODE_CONTROL_REGEX2 = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/;
 var EXCESSIVE_PUNCTUATION_REGEX2 = /[!?]{2,}|\.{4,}/;
@@ -6708,7 +6716,7 @@ function checkFormattingAndParseability(data, config) {
   };
 }
 
-// src/quality/checks/consistency.check.ts
+// apps/api/src/quality/checks/consistency.check.ts
 var MONTH_YEAR_WORD_REGEX = /^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}$/i;
 var NUMERIC_DATE_REGEX = /^\d{1,2}[\/\-]\d{4}$/;
 var YEAR_ONLY_REGEX = /^\d{4}$/;
@@ -6875,7 +6883,7 @@ function checkConsistencyAndDuplication(data) {
   };
 }
 
-// src/quality/checks/index.ts
+// apps/api/src/quality/checks/index.ts
 function runAllDeterministicChecks(data, config) {
   const atsStructResult = checkATSStructure(data);
   const contactResult = checkContactAndLinks(data);
@@ -6926,7 +6934,7 @@ function runAllDeterministicChecks(data, config) {
   };
 }
 
-// src/quality/scoring/scoring-engine.ts
+// apps/api/src/quality/scoring/scoring-engine.ts
 var SEVERITY_PENALTIES = {
   CRITICAL: 25,
   HIGH: 15,
@@ -7078,7 +7086,7 @@ function calculateQualityScore(checksResult, additionalFindings = []) {
   };
 }
 
-// src/ai/agents/resume-quality.agent.ts
+// apps/api/src/ai/agents/resume-quality.agent.ts
 var RESUME_QUALITY_SYSTEM_PROMPT = `You are the ResumeAI Quality Reviewer Agent (Phase 10).
 Your job is to perform an objective, evidence-based qualitative analysis of a candidate's resume content.
 
@@ -7218,7 +7226,7 @@ ${summarizedChecks}
   }
 };
 
-// src/ai/providers/openai.provider.ts
+// apps/api/src/ai/providers/openai.provider.ts
 import { OpenAI } from "openai";
 var OpenAIProvider = class {
   client;
@@ -7339,7 +7347,7 @@ Strict requirement: Output must strictly conform to the expected JSON schema: ${
   }
 };
 
-// src/ai/providers/groq.provider.ts
+// apps/api/src/ai/providers/groq.provider.ts
 import { OpenAI as OpenAI2 } from "openai";
 var GroqProvider = class {
   name = "groq";
@@ -7541,7 +7549,7 @@ Strict requirement: Output must strictly conform to the expected JSON schema: ${
   }
 };
 
-// src/ai/parsers/deterministic-resume-parser.ts
+// apps/api/src/ai/parsers/deterministic-resume-parser.ts
 function parseResumeFromText(rawText) {
   const safeText = rawText || "";
   let cleanedText = safeText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
@@ -8252,7 +8260,7 @@ function parseResumeFromText(rawText) {
   return ResumeParseResultSchema.parse(rawResult);
 }
 
-// src/ai/providers/mock.provider.ts
+// apps/api/src/ai/providers/mock.provider.ts
 var MockAIProvider = class {
   model;
   constructor(model = "mock-llm-v1") {
@@ -11047,7 +11055,7 @@ var MockAIProvider = class {
   }
 };
 
-// src/ai/providers/index.ts
+// apps/api/src/ai/providers/index.ts
 var defaultProvider = null;
 function getAIProvider() {
   if (defaultProvider) return defaultProvider;
@@ -11076,7 +11084,7 @@ function getAIProvider() {
   return defaultProvider;
 }
 
-// src/matching/skill-matcher.ts
+// apps/api/src/matching/skill-matcher.ts
 var SYNONYM_MAP = {
   js: "JavaScript",
   javascript: "JavaScript",
@@ -11525,7 +11533,7 @@ function matchSkills(jobAnalysis, resumeData) {
   };
 }
 
-// src/matching/experience-matcher.ts
+// apps/api/src/matching/experience-matcher.ts
 var MONTH_NAMES = {
   jan: 0,
   january: 0,
@@ -11673,7 +11681,7 @@ function matchExperience(jobAnalysis, resumeData) {
   };
 }
 
-// src/matching/education-matcher.ts
+// apps/api/src/matching/education-matcher.ts
 var DEGREE_RANK = {
   doctorate: 5,
   phd: 5,
@@ -11746,7 +11754,7 @@ function matchEducation(jobAnalysis, resumeData, candidateYearsOfExperience = 0)
   };
 }
 
-// src/matching/certification-matcher.ts
+// apps/api/src/matching/certification-matcher.ts
 function matchCertifications(jobAnalysis, resumeData) {
   const jobCerts = jobAnalysis.certifications || [];
   if (jobCerts.length === 0) {
@@ -11788,7 +11796,7 @@ function matchCertifications(jobAnalysis, resumeData) {
   };
 }
 
-// src/matching/responsibility-matcher.ts
+// apps/api/src/matching/responsibility-matcher.ts
 var STOPWORDS = /* @__PURE__ */ new Set([
   "with",
   "from",
@@ -12248,7 +12256,7 @@ function matchResponsibilities(jobAnalysis, resumeData) {
   };
 }
 
-// src/matching/keyword-matcher.ts
+// apps/api/src/matching/keyword-matcher.ts
 function matchKeywords(jobAnalysis, resumeData) {
   const jobKeywords = jobAnalysis.keywords || [];
   if (jobKeywords.length === 0) {
@@ -12329,7 +12337,7 @@ function matchKeywords(jobAnalysis, resumeData) {
   };
 }
 
-// src/matching/match-advisor.ts
+// apps/api/src/matching/match-advisor.ts
 function generateMatchAdvice(params) {
   const {
     jobAnalysis,
@@ -12455,7 +12463,7 @@ function generateMatchAdvice(params) {
   return { strengths, gaps, recommendations };
 }
 
-// src/matching/matching-engine.ts
+// apps/api/src/matching/matching-engine.ts
 function calculateMatchAnalysis(jobAnalysis, resumeData, options = {}) {
   const skillResult = matchSkills(jobAnalysis, resumeData);
   const experienceResult = matchExperience(jobAnalysis, resumeData);
@@ -12582,7 +12590,7 @@ function calculateMatchAnalysis(jobAnalysis, resumeData, options = {}) {
   };
 }
 
-// src/services/quality.service.ts
+// apps/api/src/services/quality.service.ts
 function computeResumeContentHash(resumeData, templateConfig) {
   const payload = JSON.stringify({
     data: resumeData,
@@ -12879,7 +12887,7 @@ var QualityService = class {
 };
 var qualityService = new QualityService();
 
-// src/controllers/quality.controller.ts
+// apps/api/src/controllers/quality.controller.ts
 var QualityController = class {
   /**
    * Generates or retrieves a Resume Quality Report for a resume.
@@ -12925,7 +12933,7 @@ var QualityController = class {
 };
 var qualityController = new QualityController();
 
-// src/routes/resumes.routes.ts
+// apps/api/src/routes/resumes.routes.ts
 var resumeRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", resumeController.list.bind(resumeController));
@@ -12980,7 +12988,7 @@ var resumeRoutes = async (fastify2) => {
   );
 };
 
-// src/utils/job-normalizer.ts
+// apps/api/src/utils/job-normalizer.ts
 function normalizeJobDescription(rawText) {
   if (!rawText || typeof rawText !== "string") {
     throw AppError.badRequest("Job description text is required");
@@ -13009,7 +13017,7 @@ function normalizeJobDescription(rawText) {
   };
 }
 
-// src/utils/job-validator.ts
+// apps/api/src/utils/job-validator.ts
 var KNOWN_SKILL_ALIASES = {
   js: "JavaScript",
   javascript: "JavaScript",
@@ -13216,7 +13224,7 @@ function validateAndSanitizeJobAnalysis(analysis, sourceText) {
   };
 }
 
-// src/ai/prompts/job-analyzer.prompt.ts
+// apps/api/src/ai/prompts/job-analyzer.prompt.ts
 var JOB_ANALYZER_SYSTEM_PROMPT = `You are a specialized Job Description Analysis Engine. Your sole purpose is to analyze raw job description text and extract structured, validated, evidence-backed requirements into the specified JSON schema.
 
 CRITICAL RULES:
@@ -13293,7 +13301,7 @@ Output a JSON object conforming strictly to the JobAnalysisSchema with the follo
 }`;
 }
 
-// src/services/job.service.ts
+// apps/api/src/services/job.service.ts
 var JobService = class {
   constructor(jobRepo = jobRepository) {
     this.jobRepo = jobRepo;
@@ -13432,7 +13440,7 @@ var JobService = class {
 };
 var jobService = new JobService();
 
-// src/documents/document-extractor.service.ts
+// apps/api/src/documents/document-extractor.service.ts
 import mammoth from "mammoth";
 var DocumentExtractionService = class {
   async extractPdf(buffer) {
@@ -13707,7 +13715,7 @@ ${p.text}
 };
 var documentExtractionService = new DocumentExtractionService();
 
-// src/controllers/job.controller.ts
+// apps/api/src/controllers/job.controller.ts
 var JobController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -13777,7 +13785,7 @@ var JobController = class {
 };
 var jobController = new JobController();
 
-// src/routes/jobs.routes.ts
+// apps/api/src/routes/jobs.routes.ts
 var jobRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", jobController.list.bind(jobController));
@@ -13788,7 +13796,7 @@ var jobRoutes = async (fastify2) => {
   fastify2.delete("/:id", jobController.delete.bind(jobController));
 };
 
-// src/repositories/workflow.repository.ts
+// apps/api/src/repositories/workflow.repository.ts
 var WorkflowRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.aIWorkflowRun.findFirst({
@@ -13871,7 +13879,7 @@ var WorkflowRepository = class {
 };
 var workflowRepository = new WorkflowRepository();
 
-// src/ai/prompts/resume-parser.prompt.ts
+// apps/api/src/ai/prompts/resume-parser.prompt.ts
 var RESUME_PARSER_SYSTEM_PROMPT = `You are an elite, loss-minimizing resume data extraction engine. Your sole purpose is to extract complete structured data from resume text into the specified JSON schema.
 
 CRITICAL EXTRACTION & FIDELITY RULES:
@@ -14046,7 +14054,7 @@ Output ONLY a JSON object with this exact structure:
 }`;
 }
 
-// src/ai/prompts/resume-strategy.prompt.ts
+// apps/api/src/ai/prompts/resume-strategy.prompt.ts
 var RESUME_STRATEGY_SYSTEM_PROMPT = `You are a resume strategy planner. You are NOT a resume writer.
 
 Your sole objective is: Given the candidate's existing evidence and the target job requirements, formulate the safest, most transparent, and highest-value strategic presentation plan for the candidate's existing experience.
@@ -14110,7 +14118,7 @@ ${JSON.stringify(context || {}, null, 2)}
 Output a JSON object conforming strictly to the ResumeStrategySchema.`;
 }
 
-// src/ai/prompts/content-writer.prompt.ts
+// apps/api/src/ai/prompts/content-writer.prompt.ts
 var RESUME_CONTENT_WRITER_SYSTEM_PROMPT = `You are an elite, truth-preserving AI Resume Content Writer for ResumeAI.
 
 Your objective is to improve the candidate's resume content (summary, experience bullets, project descriptions, and skill wording) to achieve clearer wording, stronger impact, and natural alignment with the target job, strictly guided by the candidate's ResumeStrategy.
@@ -14195,7 +14203,7 @@ ${JSON.stringify(context || {}, null, 2)}
 Produce a complete ContentProposalData JSON object containing only safe, evidence-supported rewrites.`;
 }
 
-// src/ai/evidence/evidence-map.ts
+// apps/api/src/ai/evidence/evidence-map.ts
 var KNOWN_DATABASES = /* @__PURE__ */ new Set([
   "postgresql",
   "postgres",
@@ -14411,7 +14419,7 @@ function isTechnologySupported(term, evidenceMap, fullResumeRawText) {
   return false;
 }
 
-// src/ai/fact-guard/fact-guard-engine.ts
+// apps/api/src/ai/fact-guard/fact-guard-engine.ts
 function extractCandidateTechnologies(resume) {
   const techs = /* @__PURE__ */ new Set();
   const addTerm = (term) => {
@@ -15162,7 +15170,7 @@ function verifyProposedChanges(changes, resumeData) {
   };
 }
 
-// src/utils/strategy-validator.ts
+// apps/api/src/utils/strategy-validator.ts
 function validateAndSanitizeStrategy(rawStrategy, resumeData, jobAnalysis, matchAnalysis) {
   const parseResult = ResumeStrategySchema.safeParse(rawStrategy);
   if (!parseResult.success) {
@@ -15231,7 +15239,7 @@ function validateAndSanitizeStrategy(rawStrategy, resumeData, jobAnalysis, match
   return strategy;
 }
 
-// src/ai/agents/index.ts
+// apps/api/src/ai/agents/index.ts
 var defaultRetryPolicy = {
   maxRetries: 3,
   initialBackoffMs: 1e3,
@@ -15546,7 +15554,7 @@ var registeredAgents = {
   [AgentName.QUALITY_REVIEWER]: new QualityReviewerAgent()
 };
 
-// src/ai/workflows/index.ts
+// apps/api/src/ai/workflows/index.ts
 var WORKFLOW_DEFINITIONS = {
   [WorkflowType.CREATE_RESUME]: {
     type: WorkflowType.CREATE_RESUME,
@@ -15614,7 +15622,7 @@ var WorkflowOrchestrator = class {
 };
 var workflowOrchestrator = new WorkflowOrchestrator();
 
-// src/services/workflow.service.ts
+// apps/api/src/services/workflow.service.ts
 import crypto3 from "crypto";
 var WorkflowService = class {
   constructor(workflowRepo = workflowRepository, orchestrator = workflowOrchestrator) {
@@ -15686,7 +15694,7 @@ var WorkflowService = class {
 };
 var workflowService = new WorkflowService();
 
-// src/controllers/workflow.controller.ts
+// apps/api/src/controllers/workflow.controller.ts
 var WorkflowController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -15716,7 +15724,7 @@ var WorkflowController = class {
 };
 var workflowController = new WorkflowController();
 
-// src/routes/workflows.routes.ts
+// apps/api/src/routes/workflows.routes.ts
 var workflowRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", workflowController.list.bind(workflowController));
@@ -15724,7 +15732,7 @@ var workflowRoutes = async (fastify2) => {
   fastify2.get("/:id", workflowController.getById.bind(workflowController));
 };
 
-// src/services/user.service.ts
+// apps/api/src/services/user.service.ts
 function toUserProfile(user) {
   return {
     id: user.id,
@@ -15762,7 +15770,7 @@ var UserService = class {
 };
 var userService = new UserService();
 
-// src/controllers/user.controller.ts
+// apps/api/src/controllers/user.controller.ts
 var UserController = class {
   async getMe(request, reply) {
     const profile = await userService.getProfile(request.user.id);
@@ -15776,7 +15784,7 @@ var UserController = class {
 };
 var userController = new UserController();
 
-// src/routes/users.routes.ts
+// apps/api/src/routes/users.routes.ts
 var userRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/me", userController.getMe.bind(userController));
@@ -15784,10 +15792,10 @@ var userRoutes = async (fastify2) => {
   fastify2.get("/profile", userController.getMe.bind(userController));
 };
 
-// src/services/import.service.ts
+// apps/api/src/services/import.service.ts
 import path4 from "node:path";
 
-// src/repositories/import.repository.ts
+// apps/api/src/repositories/import.repository.ts
 var ImportRepository = class {
   async create(data) {
     return prisma.resumeImport.create({
@@ -15871,7 +15879,7 @@ var ImportRepository = class {
 };
 var importRepository = new ImportRepository();
 
-// src/documents/extraction-validator.ts
+// apps/api/src/documents/extraction-validator.ts
 function validateExtraction(extracted) {
   const warnings = [...extracted.warnings];
   if (extracted.isScannedOrImageOnly) {
@@ -15929,7 +15937,7 @@ function validateExtraction(extracted) {
   };
 }
 
-// src/ai/validators/parse-completeness.validator.ts
+// apps/api/src/ai/validators/parse-completeness.validator.ts
 function validateParseCompleteness(sourceText, resumeData) {
   const warnings = [];
   const textLower = sourceText.toLowerCase();
@@ -16013,7 +16021,7 @@ function validateParseCompleteness(sourceText, resumeData) {
   return warnings;
 }
 
-// src/storage/local.storage.ts
+// apps/api/src/storage/local.storage.ts
 import fs2 from "fs/promises";
 import path2 from "path";
 var LocalStorageProvider = class {
@@ -16081,7 +16089,7 @@ var LocalStorageProvider = class {
   }
 };
 
-// src/storage/s3.storage.ts
+// apps/api/src/storage/s3.storage.ts
 import {
   S3Client,
   PutObjectCommand,
@@ -16282,7 +16290,7 @@ var S3StorageProvider = class {
   }
 };
 
-// src/storage/storage-path.util.ts
+// apps/api/src/storage/storage-path.util.ts
 import path3 from "node:path";
 function sanitizeFilenameForStorage(filename) {
   if (!filename || typeof filename !== "string") {
@@ -16316,7 +16324,7 @@ function buildImportStorageKey(userId, importId, originalFilename) {
   return key;
 }
 
-// src/storage/index.ts
+// apps/api/src/storage/index.ts
 var storageInstance = null;
 function getStorageProvider() {
   if (storageInstance) return storageInstance;
@@ -16344,7 +16352,7 @@ function getStorageProvider() {
   return storageInstance;
 }
 
-// src/services/import.service.ts
+// apps/api/src/services/import.service.ts
 var ResumeImportService = class {
   async processImport(userId, fileBuffer, options) {
     const startTime = Date.now();
@@ -16718,7 +16726,7 @@ var ResumeImportService = class {
 };
 var resumeImportService = new ResumeImportService();
 
-// src/controllers/import.controller.ts
+// apps/api/src/controllers/import.controller.ts
 var ImportController = class {
   async importResume(request, reply) {
     const file = await request.file();
@@ -16792,7 +16800,7 @@ var ImportController = class {
 };
 var importController = new ImportController();
 
-// src/routes/import.routes.ts
+// apps/api/src/routes/import.routes.ts
 var importRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post("/", importController.importResume.bind(importController));
@@ -16803,7 +16811,7 @@ var importRoutes = async (fastify2) => {
   fastify2.delete("/:id", importController.deleteImport.bind(importController));
 };
 
-// src/services/match.service.ts
+// apps/api/src/services/match.service.ts
 var MatchService = class {
   matchRepo = matchRepository;
   resumeRepo = resumeRepository;
@@ -16946,7 +16954,7 @@ var MatchService = class {
 };
 var matchService = new MatchService();
 
-// src/controllers/match.controller.ts
+// apps/api/src/controllers/match.controller.ts
 var MatchController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -16989,7 +16997,7 @@ var MatchController = class {
 };
 var matchController = new MatchController();
 
-// src/routes/matches.routes.ts
+// apps/api/src/routes/matches.routes.ts
 var matchRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", matchController.list.bind(matchController));
@@ -16998,7 +17006,7 @@ var matchRoutes = async (fastify2) => {
   fastify2.delete("/:id", matchController.delete.bind(matchController));
 };
 
-// src/repositories/strategy.repository.ts
+// apps/api/src/repositories/strategy.repository.ts
 var StrategyRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeStrategy.findFirst({
@@ -17207,7 +17215,7 @@ var StrategyRepository = class {
 };
 var strategyRepository = new StrategyRepository();
 
-// src/services/strategy.service.ts
+// apps/api/src/services/strategy.service.ts
 var StrategyService = class {
   strategyRepo = strategyRepository;
   resumeRepo = resumeRepository;
@@ -17456,7 +17464,7 @@ var StrategyService = class {
 };
 var strategyService = new StrategyService();
 
-// src/controllers/strategy.controller.ts
+// apps/api/src/controllers/strategy.controller.ts
 var StrategyController = class {
   service = strategyService;
   async createStrategy(request, reply) {
@@ -17519,7 +17527,7 @@ var StrategyController = class {
 };
 var strategyController = new StrategyController();
 
-// src/routes/strategies.routes.ts
+// apps/api/src/routes/strategies.routes.ts
 var strategyRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post("/", strategyController.createStrategy.bind(strategyController));
@@ -17543,7 +17551,7 @@ var strategyRoutes = async (fastify2) => {
   );
 };
 
-// src/repositories/content-proposal.repository.ts
+// apps/api/src/repositories/content-proposal.repository.ts
 var ContentProposalRepository = class {
   async findById(id) {
     return prisma.contentProposal.findUnique({
@@ -17780,7 +17788,7 @@ var ContentProposalRepository = class {
 };
 var contentProposalRepository = new ContentProposalRepository();
 
-// src/ai/prompts/section-regeneration.prompt.ts
+// apps/api/src/ai/prompts/section-regeneration.prompt.ts
 var SECTION_REGENERATION_SYSTEM_PROMPT = `You are the ResumeAI Section Regeneration Assistant.
 Your mission is to rewrite and optimize individual resume sections for maximum ATS impact and clarity while strictly honoring the FACT GUARD invariant:
 
@@ -17956,7 +17964,7 @@ Note: "evidenceIds" must cite valid evidence IDs from the repository above.
   return prompt;
 }
 
-// src/services/content-writer.service.ts
+// apps/api/src/services/content-writer.service.ts
 var ContentWriterService = class {
   proposalRepo = contentProposalRepository;
   resumeRepo = resumeRepository;
@@ -18761,7 +18769,7 @@ MANDATORY SELF-HEALING RULES FOR RETRY:
 };
 var contentWriterService = new ContentWriterService();
 
-// src/controllers/content-writer.controller.ts
+// apps/api/src/controllers/content-writer.controller.ts
 var ContentWriterController = class {
   service = contentWriterService;
   async generateProposal(request, reply) {
@@ -18824,7 +18832,7 @@ var ContentWriterController = class {
 };
 var contentWriterController = new ContentWriterController();
 
-// src/routes/content-writer.routes.ts
+// apps/api/src/routes/content-writer.routes.ts
 var contentWriterRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post(
@@ -18861,7 +18869,7 @@ var contentWriterRoutes = async (fastify2) => {
   );
 };
 
-// src/routes/test-pdf.routes.ts
+// apps/api/src/routes/test-pdf.routes.ts
 function createRepresentativeResume(length = "normal") {
   const resume = createDefaultResumeData("Yash Sharma");
   resume.personalInfo = {
@@ -19147,7 +19155,7 @@ var testPdfRoutes = async (app) => {
   });
 };
 
-// src/routes/index.ts
+// apps/api/src/routes/index.ts
 var apiRoutes = async (fastify2) => {
   await fastify2.register(healthRoutes);
   await fastify2.register(authRoutes, { prefix: "/auth" });
@@ -19162,7 +19170,7 @@ var apiRoutes = async (fastify2) => {
   await fastify2.register(testPdfRoutes, { prefix: "/test" });
 };
 
-// src/app.ts
+// apps/api/src/app.ts
 async function buildApp() {
   const app = fastify({
     logger: env.NODE_ENV !== "test" ? loggerConfig : false,
@@ -19246,7 +19254,7 @@ async function buildApp() {
   return app;
 }
 
-// src/serverless.ts
+// apps/api/src/serverless.ts
 var appPromise = null;
 async function getApp() {
   if (!appPromise) {

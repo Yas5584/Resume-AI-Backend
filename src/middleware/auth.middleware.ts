@@ -21,7 +21,7 @@ interface JwtPayload {
 
 export async function authenticate(
   request: FastifyRequest,
-  _reply: FastifyReply,
+  reply: FastifyReply,
 ) {
   let token: string | undefined;
 
@@ -65,25 +65,25 @@ export async function authenticate(
         decoded.sessionId,
       );
 
-        if (!activeSession) {
-          throw AppError.unauthorized("Session has been revoked or expired");
-        }
-
-        if (new Date(activeSession.expiresAt) < new Date()) {
-          await userRepository
-            .deleteSessionByToken(decoded.sessionId)
-            .catch(() => {});
-          throw AppError.unauthorized("Session has expired");
-        }
-      } catch (sessionErr: any) {
-        if (sessionErr instanceof AppError) {
-          throw sessionErr;
-        }
-        request.log.warn(
-          { err: sessionErr },
-          "Session DB lookup failed due to transient connection error, falling back to valid JWT signature",
-        );
+      if (!activeSession) {
+        throw AppError.unauthorized("Session has been revoked or expired");
       }
+
+      if (new Date(activeSession.expiresAt) < new Date()) {
+        await userRepository
+          .deleteSessionByToken(decoded.sessionId)
+          .catch(() => {});
+        throw AppError.unauthorized("Session has expired");
+      }
+    } catch (sessionErr: any) {
+      if (sessionErr instanceof AppError) {
+        throw sessionErr;
+      }
+      request.log.warn(
+        { err: sessionErr },
+        "Session DB lookup failed due to transient connection error, falling back to valid JWT signature",
+      );
+    }
 
     request.user = {
       id: decoded.id,
@@ -92,6 +92,17 @@ export async function authenticate(
       sessionId: decoded.sessionId ?? "",
     };
   } catch (err: any) {
+    if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
+      reply.clearCookie(AUTH_COOKIE_NAME, {
+        path: "/",
+        httpOnly: true,
+        secure:
+          env.COOKIE_SAME_SITE === "none"
+            ? true
+            : env.NODE_ENV === "production",
+        sameSite: env.COOKIE_SAME_SITE,
+      });
+    }
     if (err instanceof AppError) {
       throw err;
     }

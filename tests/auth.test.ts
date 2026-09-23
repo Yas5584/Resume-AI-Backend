@@ -363,5 +363,37 @@ describe("Authentication Endpoints (Phase 1)", () => {
       // Origin not in whitelist should not have Access-Control-Allow-Origin matching attacker
       expect(res.headers["access-control-allow-origin"]).toBeUndefined();
     });
+
+    it("should clear stale HttpOnly cookie on 401 when session is invalid or revoked", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: {
+          cookie: "resumeai_session=invalid-or-revoked-jwt-token",
+        },
+      });
+
+      expect(res.statusCode).toBe(401);
+      const setCookie = res.headers["set-cookie"];
+      expect(setCookie).toBeDefined();
+      const cookieStr = Array.isArray(setCookie) ? setCookie.join("; ") : String(setCookie);
+      expect(cookieStr).toContain("resumeai_session=;");
+    });
+
+    it("should allow POST /api/auth/logout even when session is already expired and clear cookie", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/logout",
+        headers: {
+          cookie: "resumeai_session=expired-token-value",
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const setCookie = res.headers["set-cookie"];
+      expect(setCookie).toBeDefined();
+      const cookieStr = Array.isArray(setCookie) ? setCookie.join("; ") : String(setCookie);
+      expect(cookieStr).toContain("resumeai_session=;");
+    });
   });
 });
