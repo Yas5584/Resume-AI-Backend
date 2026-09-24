@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/index.js";
 import { AppError } from "../errors/index.js";
 import { AuthenticatedRequestUser } from "@resumeai/shared";
-import { AUTH_COOKIE_NAME } from "../utils/cookies.js";
+import {
+  AUTH_COOKIE_NAME,
+  getClearAuthCookieOptions,
+} from "../utils/cookies.js";
 import { userRepository } from "../repositories/user.repository.js";
 
 declare module "fastify" {
@@ -60,29 +63,19 @@ export async function authenticate(
       throw AppError.unauthorized("Invalid token format: missing session ID");
     }
 
-    try {
-      const activeSession = await userRepository.findSessionByToken(
-        decoded.sessionId,
-      );
+    const activeSession = await userRepository.findSessionByToken(
+      decoded.sessionId,
+    );
 
-      if (!activeSession) {
-        throw AppError.unauthorized("Session has been revoked or expired");
-      }
+    if (!activeSession) {
+      throw AppError.unauthorized("Session has been revoked or expired");
+    }
 
-      if (new Date(activeSession.expiresAt) < new Date()) {
-        await userRepository
-          .deleteSessionByToken(decoded.sessionId)
-          .catch(() => {});
-        throw AppError.unauthorized("Session has expired");
-      }
-    } catch (sessionErr: any) {
-      if (sessionErr instanceof AppError) {
-        throw sessionErr;
-      }
-      request.log.warn(
-        { err: sessionErr },
-        "Session DB lookup failed due to transient connection error, falling back to valid JWT signature",
-      );
+    if (new Date(activeSession.expiresAt) < new Date()) {
+      await userRepository
+        .deleteSessionByToken(decoded.sessionId)
+        .catch(() => {});
+      throw AppError.unauthorized("Session has expired");
     }
 
     request.user = {
@@ -93,15 +86,7 @@ export async function authenticate(
     };
   } catch (err: any) {
     if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
-      reply.clearCookie(AUTH_COOKIE_NAME, {
-        path: "/",
-        httpOnly: true,
-        secure:
-          env.COOKIE_SAME_SITE === "none"
-            ? true
-            : env.NODE_ENV === "production",
-        sameSite: env.COOKIE_SAME_SITE,
-      });
+      reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
     }
     if (err instanceof AppError) {
       throw err;
@@ -113,9 +98,32 @@ export async function authenticate(
 // requireAuth is an alias for authenticate per spec
 export const requireAuth = authenticate;
 
+/**
+ * Backend-enforced Pro tier guard middleware.
+ * Must be placed after `authenticate` in `preHandler`.
+ */
+export async function requireProEntitlement(
+  request: FastifyRequest,
+  _reply: FastifyReply,
+) {
+  if (!request.user?.id) {
+    throw AppError.unauthorized("Authentication required");
+  }
+  const user = await userRepository.findById(request.user.id);
+  if (!user) {
+    throw AppError.unauthorized("User not found");
+  }
+  if (user.subscriptionTier !== "PRO" && user.subscriptionTier !== "ENTERPRISE") {
+    throw AppError.forbidden(
+      "Pro subscription required to access this feature",
+    );
+  }
+}
+
 // Helper to retrieve current user without throwing
 export function getCurrentUser(
   request: FastifyRequest,
 ): AuthenticatedRequestUser | null {
   return request.user ?? null;
 }
+

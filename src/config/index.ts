@@ -66,6 +66,10 @@ const EnvSchema = z.object({
   B2_ENDPOINT: z.string().default("https://s3.us-east-005.backblazeb2.com"),
   B2_REGION: z.string().default("us-east-005"),
   B2_INTEGRATION_TEST: z.string().optional(),
+
+  // Whop Monetization & Webhook Configuration
+  WHOP_API_KEY: z.string().optional(),
+  WHOP_WEBHOOK_SECRET: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.STORAGE_PROVIDER === "b2") {
     const keyId = data.B2_KEY_ID || data.S3_ACCESS_KEY_ID;

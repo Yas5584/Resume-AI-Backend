@@ -395,5 +395,79 @@ describe("Authentication Endpoints (Phase 1)", () => {
       const cookieStr = Array.isArray(setCookie) ? setCookie.join("; ") : String(setCookie);
       expect(cookieStr).toContain("resumeai_session=;");
     });
+
+    it("should invalidate all sessions for the user on logout even with duplicate cookies or Bearer token and stay logged out after 5 seconds", async () => {
+      // 1. Login first session
+      const loginRes1 = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: {
+          email: testEmail,
+          password: testPassword,
+        },
+      });
+      expect(loginRes1.statusCode).toBe(200);
+      const token1 = loginRes1.json().data.token;
+
+      // 2. Login second session (simulating duplicate/second cookie or token)
+      const loginRes2 = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: {
+          email: testEmail,
+          password: testPassword,
+        },
+      });
+      expect(loginRes2.statusCode).toBe(200);
+      const token2 = loginRes2.json().data.token;
+
+      // Verify authenticated before logout
+      const meBefore = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: {
+          cookie: `resumeai_session=${token2}`,
+        },
+      });
+      expect(meBefore.statusCode).toBe(200);
+      expect(meBefore.headers["cache-control"]).toContain("no-store");
+
+      // 3. Logout sending duplicate cookies
+      const logoutRes = await app.inject({
+        method: "POST",
+        url: "/api/auth/logout",
+        headers: {
+          cookie: `resumeai_session=stale-token; resumeai_session=${token2}`,
+        },
+      });
+      expect(logoutRes.statusCode).toBe(200);
+      const clearSetCookie = logoutRes.headers["set-cookie"];
+      expect(String(clearSetCookie)).toContain("resumeai_session=;");
+
+      // 4. Immediately verify /me returns 401 for BOTH token2 and token1
+      const meImmediate2 = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: { cookie: `resumeai_session=${token2}` },
+      });
+      expect(meImmediate2.statusCode).toBe(401);
+
+      const meImmediate1 = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: { authorization: `Bearer ${token1}` },
+      });
+      expect(meImmediate1.statusCode).toBe(401);
+
+      // 5. Wait full 5 seconds (tester reported 2-3s auto-relogin window) and verify still 401
+      await new Promise((resolve) => setTimeout(resolve, 5100));
+
+      const meAfter5s = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: { cookie: `resumeai_session=${token2}` },
+      });
+      expect(meAfter5s.statusCode).toBe(401);
+    }, 15000);
   });
 });

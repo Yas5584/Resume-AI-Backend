@@ -16,7 +16,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
 
-// apps/api/src/polyfills.ts
+// src/polyfills.ts
 if (typeof globalThis !== "undefined") {
   if (!globalThis.DOMMatrix) {
     globalThis.DOMMatrix = class DOMMatrix {
@@ -104,7 +104,7 @@ if (typeof globalThis !== "undefined") {
   }
 }
 
-// apps/api/src/app.ts
+// src/app.ts
 import fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -114,7 +114,7 @@ import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import { Redis } from "ioredis";
 
-// apps/api/src/config/index.ts
+// src/config/index.ts
 import { z } from "zod";
 import dotenv from "dotenv";
 import path from "path";
@@ -158,7 +158,10 @@ var EnvSchema = z.object({
   B2_BUCKET_NAME: z.string().default("resumeai-storage-2026"),
   B2_ENDPOINT: z.string().default("https://s3.us-east-005.backblazeb2.com"),
   B2_REGION: z.string().default("us-east-005"),
-  B2_INTEGRATION_TEST: z.string().optional()
+  B2_INTEGRATION_TEST: z.string().optional(),
+  // Whop Monetization & Webhook Configuration
+  WHOP_API_KEY: z.string().optional(),
+  WHOP_WEBHOOK_SECRET: z.string().optional()
 }).superRefine((data, ctx) => {
   if (data.STORAGE_PROVIDER === "b2") {
     const keyId = data.B2_KEY_ID || data.S3_ACCESS_KEY_ID;
@@ -227,10 +230,10 @@ function loadConfig() {
 }
 var env = loadConfig();
 
-// apps/api/src/errors/index.ts
+// src/errors/index.ts
 import { ZodError } from "zod";
 
-// apps/api/packages/shared/src/constants/index.ts
+// packages/shared/src/constants/index.ts
 var VerificationStatus = {
   SUPPORTED: "SUPPORTED",
   UNSUPPORTED: "UNSUPPORTED",
@@ -308,7 +311,7 @@ var ResumeQualityReportStatus = {
   STALE: "STALE"
 };
 
-// apps/api/packages/shared/src/schemas/resume.schema.ts
+// packages/shared/src/schemas/resume.schema.ts
 import { z as z2 } from "zod";
 function generateId() {
   return Math.random().toString(36).substring(2, 11);
@@ -827,7 +830,7 @@ function createDefaultResumeData(fullName = "") {
   };
 }
 
-// apps/api/packages/shared/src/schemas/job.schema.ts
+// packages/shared/src/schemas/job.schema.ts
 import { z as z3 } from "zod";
 var MIN_JOB_DESCRIPTION_CHARS = 50;
 var MAX_JOB_DESCRIPTION_CHARS = 3e4;
@@ -1092,7 +1095,7 @@ var MatchAnalysisSchema = z3.object({
   tailoringRecommendations: z3.array(z3.string()).default([])
 });
 
-// apps/api/packages/shared/src/schemas/ai.schema.ts
+// packages/shared/src/schemas/ai.schema.ts
 import { z as z4 } from "zod";
 var StrategySchema = z4.object({
   targetAngle: z4.string().describe("Primary positioning narrative for candidate"),
@@ -1144,7 +1147,7 @@ var AIUsageRecordSchema = z4.object({
   timestamp: z4.string().datetime().default(() => (/* @__PURE__ */ new Date()).toISOString())
 });
 
-// apps/api/packages/shared/src/schemas/evidence.schema.ts
+// packages/shared/src/schemas/evidence.schema.ts
 import { z as z5 } from "zod";
 var VerificationStatusSchema = z5.enum([
   VerificationStatus.SUPPORTED,
@@ -1200,7 +1203,7 @@ var FactCheckResultSchema = z5.object({
   summary: z5.string().describe("Executive summary of fact guard review")
 });
 
-// apps/api/packages/shared/src/schemas/workflow-state.schema.ts
+// packages/shared/src/schemas/workflow-state.schema.ts
 import { z as z6 } from "zod";
 var RevisionHistoryItemSchema = z6.object({
   revisionNumber: z6.number(),
@@ -1262,10 +1265,10 @@ var ResumeWorkflowStateSchema = z6.object({
   completedAt: z6.string().datetime().optional()
 });
 
-// apps/api/packages/shared/src/schemas/api.schema.ts
+// packages/shared/src/schemas/api.schema.ts
 import { z as z8 } from "zod";
 
-// apps/api/packages/shared/src/schemas/template.schema.ts
+// packages/shared/src/schemas/template.schema.ts
 import { z as z7 } from "zod";
 var TemplateIdSchema = z7.enum([
   "modern",
@@ -1406,7 +1409,7 @@ function getDefaultTemplateConfig(templateId) {
   }
 }
 
-// apps/api/packages/shared/src/schemas/api.schema.ts
+// packages/shared/src/schemas/api.schema.ts
 var ApiHealthResponseSchema = z8.object({
   success: z8.literal(true),
   service: z8.literal("resumeai-api"),
@@ -1491,7 +1494,7 @@ var UserProfileResponseSchema = z8.object({
   createdAt: z8.string().datetime()
 });
 
-// apps/api/packages/shared/src/schemas/import.schema.ts
+// packages/shared/src/schemas/import.schema.ts
 import { z as z9 } from "zod";
 var ImportStatusEnum = z9.enum([
   "PENDING",
@@ -1644,7 +1647,7 @@ var ImportMetadataSchema = z9.object({
   aiTokensUsed: z9.number().default(0)
 });
 
-// apps/api/packages/shared/src/schemas/strategy.schema.ts
+// packages/shared/src/schemas/strategy.schema.ts
 import { z as z10 } from "zod";
 var RESUME_STRATEGY_VERSION = "v1";
 var StrategyApprovalStatusEnum = z10.enum([
@@ -1995,7 +1998,7 @@ var UpdateStrategyStatusRequestSchema = z10.object({
   status: StrategyApprovalStatusEnum
 });
 
-// apps/api/packages/shared/src/schemas/content-writer.schema.ts
+// packages/shared/src/schemas/content-writer.schema.ts
 import { z as z11 } from "zod";
 var ContentProposalStatusSchema = z11.enum([
   "DRAFT",
@@ -2150,7 +2153,7 @@ var SectionRegenerationResponseSchema = z11.object({
   unsupportedClaimsCount: z11.number().int().min(0).default(0)
 });
 
-// apps/api/packages/shared/src/schemas/quality.schema.ts
+// packages/shared/src/schemas/quality.schema.ts
 import { z as z12 } from "zod";
 var ResumeQualityCategorySchema = z12.nativeEnum(ResumeQualityCategory);
 var FindingSeveritySchema = z12.nativeEnum(FindingSeverity);
@@ -2266,7 +2269,7 @@ var AIQualityAnalysisOutputSchema = z12.object({
   actionableRecommendations: z12.array(z12.string())
 });
 
-// apps/api/src/utils/cookies.ts
+// src/utils/cookies.ts
 var AUTH_COOKIE_NAME = "resumeai_session";
 function parseDurationToSeconds(durationStr) {
   const match = durationStr.match(/^(\d+)([smhdwy])?$/);
@@ -2300,11 +2303,22 @@ function getAuthCookieOptions() {
     path: "/",
     maxAge: parseDurationToSeconds(env.JWT_EXPIRES_IN),
     signed: false
-    // We use standard HttpOnly JWT so it can also be inspected if needed or kept simple
+  };
+}
+function getClearAuthCookieOptions() {
+  const { httpOnly, secure, sameSite, path: path5 } = getAuthCookieOptions();
+  return {
+    httpOnly,
+    secure,
+    sameSite,
+    path: path5,
+    maxAge: 0,
+    expires: /* @__PURE__ */ new Date(0),
+    signed: false
   };
 }
 
-// apps/api/src/errors/index.ts
+// src/errors/index.ts
 var AppError = class _AppError extends Error {
   statusCode;
   code;
@@ -2399,7 +2413,7 @@ function errorHandler(error, request, reply) {
   });
 }
 
-// apps/api/src/utils/logger.ts
+// src/utils/logger.ts
 var loggerConfig = {
   level: env.LOG_LEVEL,
   transport: env.NODE_ENV === "development" ? {
@@ -2431,7 +2445,7 @@ var logger = {
   }
 };
 
-// apps/api/src/services/health.service.ts
+// src/services/health.service.ts
 var HealthService = class {
   startTime = Date.now();
   getHealth() {
@@ -2446,7 +2460,7 @@ var HealthService = class {
 };
 var healthService = new HealthService();
 
-// apps/api/src/controllers/health.controller.ts
+// src/controllers/health.controller.ts
 var HealthController = class {
   async checkHealth(_request, reply) {
     const health = healthService.getHealth();
@@ -2455,20 +2469,20 @@ var HealthController = class {
 };
 var healthController = new HealthController();
 
-// apps/api/src/routes/health.routes.ts
+// src/routes/health.routes.ts
 var healthRoutes = async (fastify2) => {
   fastify2.get("/health", healthController.checkHealth.bind(healthController));
 };
 
-// apps/api/src/controllers/auth.controller.ts
+// src/controllers/auth.controller.ts
 import jwt2 from "jsonwebtoken";
 
-// apps/api/src/services/auth.service.ts
-import crypto from "crypto";
+// src/services/auth.service.ts
+import crypto2 from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// apps/api/packages/database/src/index.ts
+// packages/database/src/index.ts
 var src_exports = {};
 __export(src_exports, {
   ContentProposalStatus: () => ContentProposalStatus,
@@ -2485,7 +2499,7 @@ __export(src_exports, {
   prisma: () => prisma
 });
 
-// apps/api/packages/database/src/client.ts
+// packages/database/src/client.ts
 var client_exports = {};
 __export(client_exports, {
   ContentProposalStatus: () => ContentProposalStatus,
@@ -2521,10 +2535,10 @@ var prisma = globalThis.prismaGlobal ?? new PrismaClient({
 });
 globalThis.prismaGlobal = prisma;
 
-// apps/api/packages/database/src/index.ts
+// packages/database/src/index.ts
 __reExport(src_exports, client_exports);
 
-// apps/api/src/repositories/user.repository.ts
+// src/repositories/user.repository.ts
 var UserRepository = class {
   async findById(id) {
     return prisma.user.findUnique({
@@ -2598,7 +2612,558 @@ var UserRepository = class {
 };
 var userRepository = new UserRepository();
 
-// apps/api/src/services/auth.service.ts
+// src/payments/whop.provider.ts
+import crypto from "crypto";
+var DEFAULT_TIMESTAMP_TOLERANCE_SECONDS = 300;
+function getHeaderString(headers, name) {
+  if (!headers) return void 0;
+  const direct = headers[name] ?? headers[name.toLowerCase()];
+  if (Array.isArray(direct)) return direct[0];
+  return typeof direct === "string" ? direct.trim() : void 0;
+}
+function deriveSecretBuffers(secret) {
+  const trimmed = secret.trim();
+  const stripped = trimmed.startsWith("whsec_") ? trimmed.slice(6) : trimmed.startsWith("ws_") ? trimmed.slice(3) : trimmed;
+  const candidates = [];
+  try {
+    const b64 = Buffer.from(stripped, "base64");
+    if (b64.length > 0) {
+      candidates.push(b64);
+    }
+  } catch {
+  }
+  candidates.push(Buffer.from(stripped, "utf8"));
+  if (stripped !== trimmed) {
+    candidates.push(Buffer.from(trimmed, "utf8"));
+  }
+  return candidates;
+}
+function safeCompareBuffers(a, b) {
+  if (a.length === 0 || a.length !== b.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(a, b);
+}
+var WhopPaymentProvider = class {
+  providerName = "whop";
+  webhookSecret;
+  constructor(webhookSecret) {
+    this.webhookSecret = webhookSecret ?? env.WHOP_WEBHOOK_SECRET;
+  }
+  async createCheckoutSession(options) {
+    const checkoutBaseUrl = "https://whop.com/checkout";
+    const params = new URLSearchParams({
+      email: options.userEmail,
+      "d[user_id]": options.userId,
+      redirect_url: options.successUrl
+    });
+    return {
+      sessionId: `whop_chk_${crypto.randomUUID()}`,
+      checkoutUrl: `${checkoutBaseUrl}?${params.toString()}`
+    };
+  }
+  /**
+   * Verifies a Whop webhook signature against the exact raw request body.
+   * Supports both Standard Webhooks headers (`webhook-id`, `webhook-timestamp`, `webhook-signature`)
+   * and direct signature verification.
+   */
+  verifyWebhookSignature(rawBody, signatureOrHeader, headers, toleranceSeconds = DEFAULT_TIMESTAMP_TOLERANCE_SECONDS) {
+    const secret = this.webhookSecret ?? env.WHOP_WEBHOOK_SECRET;
+    if (!secret || secret.trim().length === 0) {
+      return false;
+    }
+    const rawString = Buffer.isBuffer(rawBody) ? rawBody.toString("utf8") : rawBody;
+    if (typeof rawString !== "string" || rawString.length === 0) {
+      return false;
+    }
+    const webhookId = getHeaderString(headers, "webhook-id");
+    const webhookTimestamp = getHeaderString(headers, "webhook-timestamp");
+    const sigHeader = signatureOrHeader || getHeaderString(headers, "webhook-signature") || getHeaderString(headers, "x-whop-signature") || "";
+    if (!sigHeader.trim()) {
+      return false;
+    }
+    if (webhookTimestamp !== void 0) {
+      const ts = Number(webhookTimestamp);
+      if (!Number.isFinite(ts) || ts <= 0) {
+        return false;
+      }
+      if (toleranceSeconds > 0) {
+        const nowSeconds = Math.floor(Date.now() / 1e3);
+        if (Math.abs(nowSeconds - ts) > toleranceSeconds) {
+          return false;
+        }
+      }
+    }
+    const rawEntries = sigHeader.trim().split(/\s+/).map((s) => s.trim()).filter(Boolean);
+    const extractedSignatures = [];
+    for (const entry of rawEntries) {
+      if (entry.includes(",")) {
+        const parts = entry.split(",");
+        const version = parts[0]?.trim();
+        const sigValue = parts.slice(1).join(",").trim();
+        if ((version === "v1" || version === "sha256") && sigValue) {
+          extractedSignatures.push(sigValue);
+        }
+      } else if (entry.startsWith("sha256=")) {
+        extractedSignatures.push(entry.slice(7));
+      } else {
+        extractedSignatures.push(entry);
+      }
+    }
+    if (extractedSignatures.length === 0) {
+      return false;
+    }
+    const signingPayloads = [];
+    if (webhookId && webhookTimestamp) {
+      signingPayloads.push(`${webhookId}.${webhookTimestamp}.${rawString}`);
+    } else {
+      signingPayloads.push(rawString);
+    }
+    const secretBuffers = deriveSecretBuffers(secret);
+    for (const payloadToSign of signingPayloads) {
+      for (const secretBuf of secretBuffers) {
+        const hmacBase64 = crypto.createHmac("sha256", secretBuf).update(payloadToSign, "utf8").digest("base64");
+        const hmacHex = crypto.createHmac("sha256", secretBuf).update(payloadToSign, "utf8").digest("hex");
+        const expectedBase64Buf = Buffer.from(hmacBase64, "base64");
+        const expectedHexBuf = Buffer.from(hmacHex, "hex");
+        for (const providedSig of extractedSignatures) {
+          try {
+            const providedBase64Buf = Buffer.from(providedSig, "base64");
+            if (safeCompareBuffers(providedBase64Buf, expectedBase64Buf)) {
+              return true;
+            }
+          } catch {
+          }
+          if (/^[0-9a-fA-F]{64}$/.test(providedSig)) {
+            try {
+              const providedHexBuf = Buffer.from(providedSig, "hex");
+              if (safeCompareBuffers(providedHexBuf, expectedHexBuf)) {
+                return true;
+              }
+            } catch {
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  /**
+   * Parses and normalizes a verified Whop webhook JSON payload into a canonical structure.
+   */
+  parseWebhookEvent(payload, headers) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      throw new Error("Invalid Whop webhook payload: expected JSON object");
+    }
+    const root = payload;
+    const rawType = typeof root.type === "string" && root.type || typeof root.action === "string" && root.action || typeof root.event === "string" && root.event || "";
+    const eventType = rawType.trim();
+    if (!eventType) {
+      throw new Error("Invalid Whop webhook payload: missing event type/action");
+    }
+    const dataObj = root.data && typeof root.data === "object" && !Array.isArray(root.data) ? root.data : root;
+    const headerEventId = getHeaderString(headers, "webhook-id");
+    const rootId = typeof root.id === "string" && root.id.trim() || typeof root.webhook_id === "string" && root.webhook_id.trim() || headerEventId || "";
+    if (!rootId) {
+      throw new Error("Invalid Whop webhook payload: missing event ID");
+    }
+    const metadata = (dataObj.metadata && typeof dataObj.metadata === "object" ? dataObj.metadata : void 0) ?? (dataObj.custom_fields && typeof dataObj.custom_fields === "object" ? dataObj.custom_fields : void 0) ?? {};
+    const userObj = dataObj.user && typeof dataObj.user === "object" ? dataObj.user : void 0;
+    const memberObj = dataObj.member && typeof dataObj.member === "object" ? dataObj.member : void 0;
+    const resumeAiUserId = typeof metadata.userId === "string" && metadata.userId.trim() || typeof metadata.user_id === "string" && metadata.user_id.trim() || typeof metadata.resumeai_user_id === "string" && metadata.resumeai_user_id.trim() || typeof dataObj.client_reference_id === "string" && dataObj.client_reference_id.trim() || void 0;
+    const whopUserId = typeof dataObj.user_id === "string" && dataObj.user_id.trim() || typeof userObj?.id === "string" && userObj.id.trim() || typeof memberObj?.user_id === "string" && memberObj.user_id.trim() || void 0;
+    const whopMembershipId = typeof dataObj.membership_id === "string" && dataObj.membership_id.trim() || (eventType.startsWith("membership.") && typeof dataObj.id === "string" && dataObj.id.trim() ? dataObj.id.trim() : void 0) || typeof dataObj.subscription_id === "string" && dataObj.subscription_id.trim() || void 0;
+    const whopProductId = typeof dataObj.product_id === "string" && dataObj.product_id.trim() || (dataObj.product && typeof dataObj.product === "object" && typeof dataObj.product.id === "string" ? dataObj.product.id.trim() : void 0);
+    const whopPlanId = typeof dataObj.plan_id === "string" && dataObj.plan_id.trim() || (dataObj.plan && typeof dataObj.plan === "object" && typeof dataObj.plan.id === "string" ? dataObj.plan.id.trim() : void 0);
+    const rawEmail = typeof dataObj.email === "string" && dataObj.email || typeof dataObj.user_email === "string" && dataObj.user_email || typeof userObj?.email === "string" && userObj.email || typeof memberObj?.email === "string" && memberObj.email || typeof metadata.email === "string" && metadata.email || void 0;
+    const email = rawEmail ? rawEmail.toLowerCase().trim() : void 0;
+    const status = typeof dataObj.status === "string" ? dataObj.status.trim() : void 0;
+    const cancelAtPeriodEnd = typeof dataObj.cancel_at_period_end === "boolean" ? dataObj.cancel_at_period_end : void 0;
+    const parseDate = (val) => {
+      if (!val) return void 0;
+      if (typeof val === "number") {
+        const ms = val < 1e12 ? val * 1e3 : val;
+        const d = new Date(ms);
+        return isNaN(d.getTime()) ? void 0 : d;
+      }
+      if (typeof val === "string") {
+        const num = Number(val);
+        if (Number.isFinite(num) && /^\d+$/.test(val.trim())) {
+          const ms = num < 1e12 ? num * 1e3 : num;
+          const d2 = new Date(ms);
+          return isNaN(d2.getTime()) ? void 0 : d2;
+        }
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? void 0 : d;
+      }
+      return void 0;
+    };
+    const currentPeriodStart = parseDate(
+      dataObj.renewal_period_start ?? dataObj.current_period_start ?? dataObj.valid_from
+    );
+    const currentPeriodEnd = parseDate(
+      dataObj.renewal_period_end ?? dataObj.current_period_end ?? dataObj.expires_at ?? dataObj.valid_until
+    );
+    return {
+      eventId: rootId,
+      eventType,
+      userId: resumeAiUserId,
+      whopUserId,
+      whopMembershipId,
+      whopProductId,
+      whopPlanId,
+      email,
+      status,
+      cancelAtPeriodEnd,
+      currentPeriodStart,
+      currentPeriodEnd,
+      data: dataObj
+    };
+  }
+};
+var whopPaymentProvider = new WhopPaymentProvider();
+
+// src/services/whop-webhook.service.ts
+var PRO_CREDITS_GRANT = 100;
+var GRANT_PRO_EVENTS = /* @__PURE__ */ new Set([
+  "membership.went_valid",
+  "membership.activated",
+  "app_membership.went_valid",
+  "payment.succeeded",
+  "payment.completed"
+]);
+var REVOKE_PRO_EVENTS = /* @__PURE__ */ new Set([
+  "membership.went_invalid",
+  "membership.deactivated",
+  "app_membership.went_invalid",
+  "payment.canceled",
+  "refund.created",
+  "dispute.created"
+]);
+var PAYMENT_FAILED_EVENTS = /* @__PURE__ */ new Set(["payment.failed"]);
+var PERIOD_UPDATE_EVENTS = /* @__PURE__ */ new Set([
+  "membership.cancel_at_period_end_changed",
+  "membership.updated"
+]);
+var WhopWebhookService = class {
+  /**
+   * Resolves a ResumeAI internal user from a normalized Whop webhook event.
+   * Priority order:
+   * 1. Explicit internal `userId` passed via checkout metadata / custom_fields
+   * 2. Existing User with matching `whopUserId`
+   * 3. Existing WhopSubscription record with matching `whopMembershipId` or `whopUserId` that has a `userId`
+   * 4. Existing User with matching normalized `email`
+   */
+  async resolveUserForEvent(event) {
+    if (event.userId) {
+      const byId = await prisma.user.findUnique({
+        where: { id: event.userId }
+      });
+      if (byId) return byId;
+    }
+    if (event.whopUserId) {
+      const byWhopUser = await prisma.user.findUnique({
+        where: { whopUserId: event.whopUserId }
+      });
+      if (byWhopUser) return byWhopUser;
+    }
+    if (event.whopMembershipId) {
+      const existingSub = await prisma.whopSubscription.findUnique({
+        where: { whopMembershipId: event.whopMembershipId },
+        include: { user: true }
+      });
+      if (existingSub?.user) return existingSub.user;
+    }
+    if (event.whopUserId) {
+      const existingSubByWhopUser = await prisma.whopSubscription.findFirst({
+        where: {
+          whopUserId: event.whopUserId,
+          userId: { not: null }
+        },
+        include: { user: true }
+      });
+      if (existingSubByWhopUser?.user) return existingSubByWhopUser.user;
+    }
+    if (event.email) {
+      const byEmail = await prisma.user.findUnique({
+        where: { email: event.email.toLowerCase().trim() }
+      });
+      if (byEmail) return byEmail;
+    }
+    return null;
+  }
+  /**
+   * Processes a verified Whop webhook payload idempotently.
+   */
+  async processWebhook(rawPayload, headers) {
+    const normalized = whopPaymentProvider.parseWebhookEvent(
+      rawPayload,
+      headers
+    );
+    const existingEvent = await prisma.webhookEvent.findUnique({
+      where: { eventId: normalized.eventId }
+    });
+    if (existingEvent && (existingEvent.status === "PROCESSED" || existingEvent.status === "IGNORED")) {
+      return {
+        eventId: normalized.eventId,
+        eventType: normalized.eventType,
+        duplicate: true,
+        status: existingEvent.status,
+        userId: existingEvent.userId
+      };
+    }
+    let webhookRecordId;
+    try {
+      const record = existingEvent ? await prisma.webhookEvent.update({
+        where: { id: existingEvent.id },
+        data: {
+          status: "PROCESSING",
+          errorMessage: null
+        }
+      }) : await prisma.webhookEvent.create({
+        data: {
+          provider: "whop",
+          eventId: normalized.eventId,
+          eventType: normalized.eventType,
+          status: "PROCESSING",
+          whopUserId: normalized.whopUserId ?? null,
+          whopMembershipId: normalized.whopMembershipId ?? null,
+          payload: rawPayload ?? {}
+        }
+      });
+      webhookRecordId = record.id;
+    } catch (err) {
+      if (err?.code === "P2002") {
+        return {
+          eventId: normalized.eventId,
+          eventType: normalized.eventType,
+          duplicate: true,
+          status: "PROCESSED"
+        };
+      }
+      throw err;
+    }
+    try {
+      const user = await this.resolveUserForEvent(normalized);
+      const userId = user?.id ?? null;
+      let finalStatus = "PROCESSED";
+      let updatedTier = user?.subscriptionTier;
+      let updatedSubStatus = user?.subscriptionStatus;
+      const membershipKey = normalized.whopMembershipId || (normalized.whopUserId ? `whop_user_${normalized.whopUserId}` : `whop_evt_${normalized.eventId}`);
+      if (GRANT_PRO_EVENTS.has(normalized.eventType)) {
+        updatedTier = SubscriptionTier.PRO;
+        updatedSubStatus = "active";
+        await prisma.whopSubscription.upsert({
+          where: { whopMembershipId: membershipKey },
+          create: {
+            userId,
+            whopUserId: normalized.whopUserId ?? null,
+            whopMembershipId: membershipKey,
+            whopProductId: normalized.whopProductId ?? null,
+            whopPlanId: normalized.whopPlanId ?? null,
+            email: normalized.email ?? user?.email ?? null,
+            status: "active",
+            tier: SubscriptionTier.PRO,
+            cancelAtPeriodEnd: normalized.cancelAtPeriodEnd ?? false,
+            currentPeriodStart: normalized.currentPeriodStart ?? /* @__PURE__ */ new Date(),
+            currentPeriodEnd: normalized.currentPeriodEnd ?? null,
+            rawMetadata: normalized.data
+          },
+          update: {
+            ...userId ? { userId } : {},
+            ...normalized.whopUserId ? { whopUserId: normalized.whopUserId } : {},
+            ...normalized.whopProductId ? { whopProductId: normalized.whopProductId } : {},
+            ...normalized.whopPlanId ? { whopPlanId: normalized.whopPlanId } : {},
+            ...normalized.email ? { email: normalized.email } : {},
+            status: "active",
+            tier: SubscriptionTier.PRO,
+            ...normalized.cancelAtPeriodEnd !== void 0 ? { cancelAtPeriodEnd: normalized.cancelAtPeriodEnd } : { cancelAtPeriodEnd: false },
+            ...normalized.currentPeriodStart ? { currentPeriodStart: normalized.currentPeriodStart } : {},
+            ...normalized.currentPeriodEnd ? { currentPeriodEnd: normalized.currentPeriodEnd } : {},
+            rawMetadata: normalized.data
+          }
+        });
+        if (user) {
+          const isNewProUpgrade = user.subscriptionTier !== SubscriptionTier.PRO;
+          const isPaymentSucceeded = normalized.eventType === "payment.succeeded" || normalized.eventType === "payment.completed";
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionTier: SubscriptionTier.PRO,
+              subscriptionStatus: "active",
+              ...normalized.currentPeriodEnd ? { subscriptionExpiresAt: normalized.currentPeriodEnd } : {},
+              ...normalized.whopUserId && !user.whopUserId ? { whopUserId: normalized.whopUserId } : {},
+              ...normalized.whopMembershipId ? { whopMembershipId: normalized.whopMembershipId } : {},
+              ...isNewProUpgrade || isPaymentSucceeded ? { creditsBalance: { increment: PRO_CREDITS_GRANT } } : {}
+            }
+          });
+        }
+      } else if (REVOKE_PRO_EVENTS.has(normalized.eventType)) {
+        updatedTier = SubscriptionTier.FREE;
+        updatedSubStatus = "canceled";
+        await prisma.whopSubscription.upsert({
+          where: { whopMembershipId: membershipKey },
+          create: {
+            userId,
+            whopUserId: normalized.whopUserId ?? null,
+            whopMembershipId: membershipKey,
+            whopProductId: normalized.whopProductId ?? null,
+            whopPlanId: normalized.whopPlanId ?? null,
+            email: normalized.email ?? user?.email ?? null,
+            status: "canceled",
+            tier: SubscriptionTier.FREE,
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: normalized.currentPeriodEnd ?? /* @__PURE__ */ new Date(),
+            rawMetadata: normalized.data
+          },
+          update: {
+            ...userId ? { userId } : {},
+            status: "canceled",
+            tier: SubscriptionTier.FREE,
+            ...normalized.currentPeriodEnd ? { currentPeriodEnd: normalized.currentPeriodEnd } : {},
+            rawMetadata: normalized.data
+          }
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionTier: SubscriptionTier.FREE,
+              subscriptionStatus: "canceled",
+              ...normalized.currentPeriodEnd ? { subscriptionExpiresAt: normalized.currentPeriodEnd } : {},
+              ...normalized.whopUserId && !user.whopUserId ? { whopUserId: normalized.whopUserId } : {}
+            }
+          });
+        }
+      } else if (PAYMENT_FAILED_EVENTS.has(normalized.eventType)) {
+        updatedSubStatus = "past_due";
+        if (normalized.whopMembershipId) {
+          await prisma.whopSubscription.updateMany({
+            where: { whopMembershipId: normalized.whopMembershipId },
+            data: {
+              status: "past_due",
+              rawMetadata: normalized.data
+            }
+          });
+        }
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionStatus: "past_due",
+              ...normalized.whopUserId && !user.whopUserId ? { whopUserId: normalized.whopUserId } : {}
+            }
+          });
+        }
+      } else if (PERIOD_UPDATE_EVENTS.has(normalized.eventType)) {
+        if (normalized.whopMembershipId) {
+          await prisma.whopSubscription.updateMany({
+            where: { whopMembershipId: normalized.whopMembershipId },
+            data: {
+              ...normalized.cancelAtPeriodEnd !== void 0 ? { cancelAtPeriodEnd: normalized.cancelAtPeriodEnd } : {},
+              ...normalized.currentPeriodEnd ? { currentPeriodEnd: normalized.currentPeriodEnd } : {},
+              rawMetadata: normalized.data
+            }
+          });
+        }
+        if (user && normalized.currentPeriodEnd) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionExpiresAt: normalized.currentPeriodEnd
+            }
+          });
+        }
+      } else {
+        finalStatus = "IGNORED";
+      }
+      await prisma.webhookEvent.update({
+        where: { id: webhookRecordId },
+        data: {
+          status: finalStatus,
+          userId,
+          processedAt: /* @__PURE__ */ new Date()
+        }
+      });
+      return {
+        eventId: normalized.eventId,
+        eventType: normalized.eventType,
+        duplicate: false,
+        status: finalStatus,
+        userId,
+        subscriptionTier: updatedTier,
+        subscriptionStatus: updatedSubStatus
+      };
+    } catch (err) {
+      await prisma.webhookEvent.update({
+        where: { id: webhookRecordId },
+        data: {
+          status: "FAILED",
+          errorMessage: err instanceof Error ? err.message : String(err)
+        }
+      }).catch(() => {
+      });
+      throw err;
+    }
+  }
+  /**
+   * Reconciles any unlinked WhopSubscription records matching the user's email
+   * (e.g., when a user completes Whop checkout before registering their ResumeAI account).
+   */
+  async reconcileUserEntitlements(userId, email) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const unlinkedActiveSubs = await prisma.whopSubscription.findMany({
+      where: {
+        email: normalizedEmail,
+        userId: null
+      },
+      orderBy: { updatedAt: "desc" }
+    });
+    if (unlinkedActiveSubs.length === 0) return;
+    const latestSub = unlinkedActiveSubs[0];
+    await prisma.whopSubscription.updateMany({
+      where: { email: normalizedEmail, userId: null },
+      data: { userId }
+    });
+    if (latestSub.status === "active" && latestSub.tier === SubscriptionTier.PRO) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          subscriptionTier: SubscriptionTier.PRO,
+          subscriptionStatus: "active",
+          ...latestSub.whopUserId ? { whopUserId: latestSub.whopUserId } : {},
+          whopMembershipId: latestSub.whopMembershipId,
+          ...latestSub.currentPeriodEnd ? { subscriptionExpiresAt: latestSub.currentPeriodEnd } : {},
+          creditsBalance: { increment: PRO_CREDITS_GRANT }
+        }
+      });
+    }
+  }
+  /**
+   * Backend-enforced entitlement check for Pro features.
+   */
+  async hasProEntitlement(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true
+      }
+    });
+    if (!user) return false;
+    if (user.subscriptionTier === SubscriptionTier.PRO || user.subscriptionTier === SubscriptionTier.ENTERPRISE) {
+      if (user.subscriptionExpiresAt && user.subscriptionExpiresAt.getTime() < Date.now() && user.subscriptionStatus === "canceled") {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+};
+var whopWebhookService = new WhopWebhookService();
+
+// src/services/auth.service.ts
 function toAuthUser(user) {
   return {
     id: user.id,
@@ -2646,12 +3211,15 @@ var AuthService = class {
     }
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
-    const user = await this.userRepo.create({
+    let user = await this.userRepo.create({
       email,
       name: data.name.trim(),
       passwordHash
     });
-    const sessionId = crypto.randomUUID();
+    await whopWebhookService.reconcileUserEntitlements(user.id, user.email).catch(() => {
+    });
+    user = await this.userRepo.findById(user.id) ?? user;
+    const sessionId = crypto2.randomUUID();
     const expiresAt = new Date(
       Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN)
     );
@@ -2680,7 +3248,7 @@ var AuthService = class {
     if (!validPassword) {
       throw AppError.unauthorized("Invalid email or password");
     }
-    const sessionId = crypto.randomUUID();
+    const sessionId = crypto2.randomUUID();
     const expiresAt = new Date(
       Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN)
     );
@@ -2696,13 +3264,16 @@ var AuthService = class {
       sessionId
     };
   }
-  async logout(sessionId, token) {
+  async logout(sessionId, token, userId) {
     if (sessionId) {
       await this.userRepo.deleteSessionById(sessionId);
       await this.userRepo.deleteSessionByToken(sessionId);
     }
     if (token) {
       await this.userRepo.deleteSessionByToken(token);
+    }
+    if (userId) {
+      await this.userRepo.deleteUserSessions(userId);
     }
   }
   async getProfile(userId) {
@@ -2720,7 +3291,7 @@ var AuthService = class {
 };
 var authService = new AuthService();
 
-// apps/api/src/utils/response.ts
+// src/utils/response.ts
 function sendSuccess(reply, data, statusCode = 200, message) {
   return reply.status(statusCode).send({
     success: true,
@@ -2732,9 +3303,28 @@ function sendCreated(reply, data, message) {
   return sendSuccess(reply, data, 201, message);
 }
 
-// apps/api/src/controllers/auth.controller.ts
+// src/controllers/auth.controller.ts
+function setNoStoreHeaders(reply) {
+  reply.header(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, private"
+  );
+  reply.header("Pragma", "no-cache");
+  reply.header("Expires", "0");
+}
+function sanitizeToken(raw) {
+  let clean = raw.trim();
+  if (clean.startsWith('"') && clean.endsWith('"')) {
+    clean = clean.slice(1, -1).trim();
+  }
+  if (clean.startsWith("Bearer ")) {
+    clean = clean.substring(7).trim();
+  }
+  return clean;
+}
 var AuthController = class {
   async register(request, reply) {
+    setNoStoreHeaders(reply);
     const body = RegisterRequestSchema.parse(request.body);
     const result = await authService.register(body);
     reply.setCookie(AUTH_COOKIE_NAME, result.token, getAuthCookieOptions());
@@ -2745,6 +3335,7 @@ var AuthController = class {
     );
   }
   async login(request, reply) {
+    setNoStoreHeaders(reply);
     const body = LoginRequestSchema.parse(request.body);
     const result = await authService.login(body);
     reply.setCookie(AUTH_COOKIE_NAME, result.token, getAuthCookieOptions());
@@ -2756,25 +3347,62 @@ var AuthController = class {
     );
   }
   async logout(request, reply) {
-    let sessionId = request.user?.sessionId;
+    setNoStoreHeaders(reply);
+    const candidateTokens = /* @__PURE__ */ new Set();
+    const sessionIds = /* @__PURE__ */ new Set();
+    const userIds = /* @__PURE__ */ new Set();
+    if (request.user?.sessionId) {
+      sessionIds.add(request.user.sessionId);
+    }
+    if (request.user?.id) {
+      userIds.add(request.user.id);
+    }
     const cookieToken = request.cookies?.[AUTH_COOKIE_NAME];
-    if (!sessionId && cookieToken) {
+    if (cookieToken) {
+      candidateTokens.add(sanitizeToken(cookieToken));
+    }
+    const rawCookieHeader = request.headers.cookie;
+    if (rawCookieHeader) {
+      for (const pair of rawCookieHeader.split(";")) {
+        const [name, ...rest] = pair.trim().split("=");
+        if (name === AUTH_COOKIE_NAME && rest.length > 0) {
+          const val = sanitizeToken(decodeURIComponent(rest.join("=")));
+          if (val) candidateTokens.add(val);
+        }
+      }
+    }
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const val = sanitizeToken(authHeader.substring(7));
+      if (val) candidateTokens.add(val);
+    }
+    for (const token of candidateTokens) {
       try {
-        const decoded = jwt2.decode(cookieToken);
-        if (decoded?.sessionId) sessionId = decoded.sessionId;
+        const decoded = jwt2.decode(token);
+        if (decoded?.sessionId) sessionIds.add(String(decoded.sessionId));
+        if (decoded?.id) userIds.add(String(decoded.id));
       } catch {
       }
     }
-    try {
-      await authService.logout(sessionId, cookieToken);
-    } catch {
+    for (const sid of sessionIds) {
+      try {
+        await authService.logout(sid, void 0, void 0);
+      } catch {
+      }
     }
-    reply.clearCookie(AUTH_COOKIE_NAME, {
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax"
-    });
+    for (const token of candidateTokens) {
+      try {
+        await authService.logout(void 0, token, void 0);
+      } catch {
+      }
+    }
+    for (const uid of userIds) {
+      try {
+        await authService.logout(void 0, void 0, uid);
+      } catch {
+      }
+    }
+    reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
     return sendSuccess(
       reply,
       { success: true },
@@ -2783,13 +3411,14 @@ var AuthController = class {
     );
   }
   async me(request, reply) {
+    setNoStoreHeaders(reply);
     const profile = await authService.getProfile(request.user.id);
     return sendSuccess(reply, profile);
   }
 };
 var authController = new AuthController();
 
-// apps/api/src/middleware/auth.middleware.ts
+// src/middleware/auth.middleware.ts
 import jwt3 from "jsonwebtoken";
 async function authenticate(request, reply) {
   let token;
@@ -2819,26 +3448,16 @@ async function authenticate(request, reply) {
     if (!decoded.sessionId) {
       throw AppError.unauthorized("Invalid token format: missing session ID");
     }
-    try {
-      const activeSession = await userRepository.findSessionByToken(
-        decoded.sessionId
-      );
-      if (!activeSession) {
-        throw AppError.unauthorized("Session has been revoked or expired");
-      }
-      if (new Date(activeSession.expiresAt) < /* @__PURE__ */ new Date()) {
-        await userRepository.deleteSessionByToken(decoded.sessionId).catch(() => {
-        });
-        throw AppError.unauthorized("Session has expired");
-      }
-    } catch (sessionErr) {
-      if (sessionErr instanceof AppError) {
-        throw sessionErr;
-      }
-      request.log.warn(
-        { err: sessionErr },
-        "Session DB lookup failed due to transient connection error, falling back to valid JWT signature"
-      );
+    const activeSession = await userRepository.findSessionByToken(
+      decoded.sessionId
+    );
+    if (!activeSession) {
+      throw AppError.unauthorized("Session has been revoked or expired");
+    }
+    if (new Date(activeSession.expiresAt) < /* @__PURE__ */ new Date()) {
+      await userRepository.deleteSessionByToken(decoded.sessionId).catch(() => {
+      });
+      throw AppError.unauthorized("Session has expired");
     }
     request.user = {
       id: decoded.id,
@@ -2848,12 +3467,7 @@ async function authenticate(request, reply) {
     };
   } catch (err) {
     if (request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
-      reply.clearCookie(AUTH_COOKIE_NAME, {
-        path: "/",
-        httpOnly: true,
-        secure: env.COOKIE_SAME_SITE === "none" ? true : env.NODE_ENV === "production",
-        sameSite: env.COOKIE_SAME_SITE
-      });
+      reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
     }
     if (err instanceof AppError) {
       throw err;
@@ -2862,7 +3476,7 @@ async function authenticate(request, reply) {
   }
 }
 
-// apps/api/src/routes/auth.routes.ts
+// src/routes/auth.routes.ts
 var authRoutes = async (fastify2) => {
   const authRateLimitMax = env.NODE_ENV === "test" ? 1e3 : 10;
   fastify2.post(
@@ -2900,7 +3514,7 @@ var authRoutes = async (fastify2) => {
   );
 };
 
-// apps/api/src/repositories/resume.repository.ts
+// src/repositories/resume.repository.ts
 var ResumeRepository = class {
   /**
    * Strictly enforces userId ownership check.
@@ -3066,7 +3680,7 @@ var ResumeRepository = class {
 };
 var resumeRepository = new ResumeRepository();
 
-// apps/api/src/services/resume.service.ts
+// src/services/resume.service.ts
 var ResumeService = class {
   constructor(resumeRepo = resumeRepository) {
     this.resumeRepo = resumeRepo;
@@ -3185,10 +3799,10 @@ var ResumeService = class {
 };
 var resumeService = new ResumeService();
 
-// apps/api/src/export/pdf-exporter.ts
+// src/export/pdf-exporter.ts
 import { chromium } from "playwright";
 
-// apps/api/src/export/html-renderer.ts
+// src/export/html-renderer.ts
 function escapeHtml(str) {
   if (str === null || str === void 0) return "";
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -3689,7 +4303,7 @@ function renderResumeToHtml(data, config, title) {
 </html>`;
 }
 
-// apps/api/src/export/sanitize-filename.ts
+// src/export/sanitize-filename.ts
 function sanitizeFilename(title, ext) {
   if (!title || typeof title !== "string") {
     return `Resume.${ext}`;
@@ -3707,7 +4321,7 @@ function sanitizeFilename(title, ext) {
   return `${sanitized}.${ext}`;
 }
 
-// apps/api/src/export/pdf-exporter.ts
+// src/export/pdf-exporter.ts
 var CONTAINER_CHROMIUM_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
@@ -3783,7 +4397,7 @@ var PdfResumeExporter = class {
 };
 var pdfResumeExporter = new PdfResumeExporter();
 
-// apps/api/src/export/puppeteer-pdf-exporter.ts
+// src/export/puppeteer-pdf-exporter.ts
 import puppeteer from "puppeteer-core";
 import chromium2 from "@sparticuz/chromium";
 import fs from "fs";
@@ -3948,7 +4562,7 @@ var PuppeteerPdfResumeExporter = class {
 };
 var puppeteerPdfResumeExporter = new PuppeteerPdfResumeExporter();
 
-// apps/api/src/export/pdf-exporter.factory.ts
+// src/export/pdf-exporter.factory.ts
 function getPdfExporter(override) {
   const selected = override || env.PDF_RENDERER || "playwright";
   switch (selected) {
@@ -3960,7 +4574,7 @@ function getPdfExporter(override) {
   }
 }
 
-// apps/api/src/export/docx-exporter.ts
+// src/export/docx-exporter.ts
 import {
   Document,
   Packer,
@@ -4634,7 +5248,7 @@ var DocxResumeExporter = class {
 };
 var docxResumeExporter = new DocxResumeExporter();
 
-// apps/api/src/export/export.service.ts
+// src/export/export.service.ts
 var ResumeExportService = class {
   constructor(resumeRepo = resumeRepository, pdfExporter = getPdfExporter(), docxExporter = docxResumeExporter) {
     this.resumeRepo = resumeRepo;
@@ -4662,7 +5276,7 @@ var ResumeExportService = class {
 };
 var resumeExportService = new ResumeExportService();
 
-// apps/api/src/controllers/resume.controller.ts
+// src/controllers/resume.controller.ts
 var ResumeController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -4776,10 +5390,10 @@ var ResumeController = class {
 };
 var resumeController = new ResumeController();
 
-// apps/api/src/services/quality.service.ts
-import crypto2 from "crypto";
+// src/services/quality.service.ts
+import crypto3 from "crypto";
 
-// apps/api/src/repositories/job.repository.ts
+// src/repositories/job.repository.ts
 var JobRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.jobDescription.findFirst({
@@ -4874,7 +5488,7 @@ var JobRepository = class {
 };
 var jobRepository = new JobRepository();
 
-// apps/api/src/repositories/match.repository.ts
+// src/repositories/match.repository.ts
 var MatchRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeJobAnalysis.findFirst({
@@ -5014,7 +5628,7 @@ var MatchRepository = class {
 };
 var matchRepository = new MatchRepository();
 
-// apps/api/src/repositories/quality-report.repository.ts
+// src/repositories/quality-report.repository.ts
 var QualityReportRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeQualityReport.findFirst({
@@ -5172,7 +5786,7 @@ var QualityReportRepository = class {
 };
 var qualityReportRepository = new QualityReportRepository();
 
-// apps/api/src/quality/checks/ats-structure.check.ts
+// src/quality/checks/ats-structure.check.ts
 function checkATSStructure(data) {
   const findings = [];
   let passed = 0;
@@ -5319,7 +5933,7 @@ function checkATSStructure(data) {
   };
 }
 
-// apps/api/src/quality/checks/contact-links.check.ts
+// src/quality/checks/contact-links.check.ts
 var EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 var PHONE_REGEX = /[\d+()\-.\s]{7,}/;
 function isValidUrlSyntax(urlStr) {
@@ -5550,7 +6164,7 @@ function checkContactAndLinks(data) {
   };
 }
 
-// apps/api/src/ai/ats-validator/ats-validator.ts
+// src/ai/ats-validator/ats-validator.ts
 var STRONG_ACTION_VERBS = /* @__PURE__ */ new Set([
   "accelerated",
   "achieved",
@@ -5862,7 +6476,7 @@ function validateATS(text, section, options) {
   };
 }
 
-// apps/api/src/quality/checks/experience.check.ts
+// src/quality/checks/experience.check.ts
 var PASSIVE_VOICE_REGEX = /\b(?:was|were|is|are|been|being)\s+(?:tasked|assigned|asked|required|built|developed|managed|engineered|given|chosen|directed|selected|deployed|created)\b/i;
 var PASSIVE_BY_REGEX = /\b(?:developed|created|managed|maintained|led|directed|engineered|built|implemented)\s+by\b/i;
 var WEAK_ACTION_VERB_PHRASES = [
@@ -6239,7 +6853,7 @@ function checkExperienceAndContent(data) {
   };
 }
 
-// apps/api/src/quality/checks/skills.check.ts
+// src/quality/checks/skills.check.ts
 function checkSkills(data) {
   const findings = [];
   const skillGroups = data.skills || [];
@@ -6469,7 +7083,7 @@ function checkSkills(data) {
   };
 }
 
-// apps/api/src/quality/checks/education.check.ts
+// src/quality/checks/education.check.ts
 function checkEducationAndCertifications(data) {
   const findings = [];
   const educationList = data.education || [];
@@ -6576,7 +7190,7 @@ function checkEducationAndCertifications(data) {
   };
 }
 
-// apps/api/src/quality/checks/formatting.check.ts
+// src/quality/checks/formatting.check.ts
 var EMOJI_AND_DECORATIVE_REGEX2 = /[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1D400}-\u{1D7FF}]/u;
 var UNICODE_CONTROL_REGEX2 = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/;
 var EXCESSIVE_PUNCTUATION_REGEX2 = /[!?]{2,}|\.{4,}/;
@@ -6716,7 +7330,7 @@ function checkFormattingAndParseability(data, config) {
   };
 }
 
-// apps/api/src/quality/checks/consistency.check.ts
+// src/quality/checks/consistency.check.ts
 var MONTH_YEAR_WORD_REGEX = /^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}$/i;
 var NUMERIC_DATE_REGEX = /^\d{1,2}[\/\-]\d{4}$/;
 var YEAR_ONLY_REGEX = /^\d{4}$/;
@@ -6883,7 +7497,7 @@ function checkConsistencyAndDuplication(data) {
   };
 }
 
-// apps/api/src/quality/checks/index.ts
+// src/quality/checks/index.ts
 function runAllDeterministicChecks(data, config) {
   const atsStructResult = checkATSStructure(data);
   const contactResult = checkContactAndLinks(data);
@@ -6934,7 +7548,7 @@ function runAllDeterministicChecks(data, config) {
   };
 }
 
-// apps/api/src/quality/scoring/scoring-engine.ts
+// src/quality/scoring/scoring-engine.ts
 var SEVERITY_PENALTIES = {
   CRITICAL: 25,
   HIGH: 15,
@@ -7086,7 +7700,7 @@ function calculateQualityScore(checksResult, additionalFindings = []) {
   };
 }
 
-// apps/api/src/ai/agents/resume-quality.agent.ts
+// src/ai/agents/resume-quality.agent.ts
 var RESUME_QUALITY_SYSTEM_PROMPT = `You are the ResumeAI Quality Reviewer Agent (Phase 10).
 Your job is to perform an objective, evidence-based qualitative analysis of a candidate's resume content.
 
@@ -7226,7 +7840,7 @@ ${summarizedChecks}
   }
 };
 
-// apps/api/src/ai/providers/openai.provider.ts
+// src/ai/providers/openai.provider.ts
 import { OpenAI } from "openai";
 var OpenAIProvider = class {
   client;
@@ -7347,7 +7961,7 @@ Strict requirement: Output must strictly conform to the expected JSON schema: ${
   }
 };
 
-// apps/api/src/ai/providers/groq.provider.ts
+// src/ai/providers/groq.provider.ts
 import { OpenAI as OpenAI2 } from "openai";
 var GroqProvider = class {
   name = "groq";
@@ -7549,7 +8163,7 @@ Strict requirement: Output must strictly conform to the expected JSON schema: ${
   }
 };
 
-// apps/api/src/ai/parsers/deterministic-resume-parser.ts
+// src/ai/parsers/deterministic-resume-parser.ts
 function parseResumeFromText(rawText) {
   const safeText = rawText || "";
   let cleanedText = safeText.replace(/<\/?RESUME_PAGE_\d+>/gi, "");
@@ -8260,7 +8874,7 @@ function parseResumeFromText(rawText) {
   return ResumeParseResultSchema.parse(rawResult);
 }
 
-// apps/api/src/ai/providers/mock.provider.ts
+// src/ai/providers/mock.provider.ts
 var MockAIProvider = class {
   model;
   constructor(model = "mock-llm-v1") {
@@ -11055,7 +11669,7 @@ var MockAIProvider = class {
   }
 };
 
-// apps/api/src/ai/providers/index.ts
+// src/ai/providers/index.ts
 var defaultProvider = null;
 function getAIProvider() {
   if (defaultProvider) return defaultProvider;
@@ -11084,7 +11698,7 @@ function getAIProvider() {
   return defaultProvider;
 }
 
-// apps/api/src/matching/skill-matcher.ts
+// src/matching/skill-matcher.ts
 var SYNONYM_MAP = {
   js: "JavaScript",
   javascript: "JavaScript",
@@ -11533,7 +12147,7 @@ function matchSkills(jobAnalysis, resumeData) {
   };
 }
 
-// apps/api/src/matching/experience-matcher.ts
+// src/matching/experience-matcher.ts
 var MONTH_NAMES = {
   jan: 0,
   january: 0,
@@ -11681,7 +12295,7 @@ function matchExperience(jobAnalysis, resumeData) {
   };
 }
 
-// apps/api/src/matching/education-matcher.ts
+// src/matching/education-matcher.ts
 var DEGREE_RANK = {
   doctorate: 5,
   phd: 5,
@@ -11754,7 +12368,7 @@ function matchEducation(jobAnalysis, resumeData, candidateYearsOfExperience = 0)
   };
 }
 
-// apps/api/src/matching/certification-matcher.ts
+// src/matching/certification-matcher.ts
 function matchCertifications(jobAnalysis, resumeData) {
   const jobCerts = jobAnalysis.certifications || [];
   if (jobCerts.length === 0) {
@@ -11796,7 +12410,7 @@ function matchCertifications(jobAnalysis, resumeData) {
   };
 }
 
-// apps/api/src/matching/responsibility-matcher.ts
+// src/matching/responsibility-matcher.ts
 var STOPWORDS = /* @__PURE__ */ new Set([
   "with",
   "from",
@@ -12256,7 +12870,7 @@ function matchResponsibilities(jobAnalysis, resumeData) {
   };
 }
 
-// apps/api/src/matching/keyword-matcher.ts
+// src/matching/keyword-matcher.ts
 function matchKeywords(jobAnalysis, resumeData) {
   const jobKeywords = jobAnalysis.keywords || [];
   if (jobKeywords.length === 0) {
@@ -12337,7 +12951,7 @@ function matchKeywords(jobAnalysis, resumeData) {
   };
 }
 
-// apps/api/src/matching/match-advisor.ts
+// src/matching/match-advisor.ts
 function generateMatchAdvice(params) {
   const {
     jobAnalysis,
@@ -12463,7 +13077,7 @@ function generateMatchAdvice(params) {
   return { strengths, gaps, recommendations };
 }
 
-// apps/api/src/matching/matching-engine.ts
+// src/matching/matching-engine.ts
 function calculateMatchAnalysis(jobAnalysis, resumeData, options = {}) {
   const skillResult = matchSkills(jobAnalysis, resumeData);
   const experienceResult = matchExperience(jobAnalysis, resumeData);
@@ -12590,17 +13204,17 @@ function calculateMatchAnalysis(jobAnalysis, resumeData, options = {}) {
   };
 }
 
-// apps/api/src/services/quality.service.ts
+// src/services/quality.service.ts
 function computeResumeContentHash(resumeData, templateConfig) {
   const payload = JSON.stringify({
     data: resumeData,
     config: templateConfig || null
   });
-  return crypto2.createHash("sha256").update(payload).digest("hex");
+  return crypto3.createHash("sha256").update(payload).digest("hex");
 }
 function computeJobContentHash(jobParsedData) {
   const payload = JSON.stringify(jobParsedData || {});
-  return crypto2.createHash("sha256").update(payload).digest("hex");
+  return crypto3.createHash("sha256").update(payload).digest("hex");
 }
 var QualityService = class {
   resumeRepo = resumeRepository;
@@ -12887,7 +13501,7 @@ var QualityService = class {
 };
 var qualityService = new QualityService();
 
-// apps/api/src/controllers/quality.controller.ts
+// src/controllers/quality.controller.ts
 var QualityController = class {
   /**
    * Generates or retrieves a Resume Quality Report for a resume.
@@ -12933,7 +13547,7 @@ var QualityController = class {
 };
 var qualityController = new QualityController();
 
-// apps/api/src/routes/resumes.routes.ts
+// src/routes/resumes.routes.ts
 var resumeRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", resumeController.list.bind(resumeController));
@@ -12988,7 +13602,7 @@ var resumeRoutes = async (fastify2) => {
   );
 };
 
-// apps/api/src/utils/job-normalizer.ts
+// src/utils/job-normalizer.ts
 function normalizeJobDescription(rawText) {
   if (!rawText || typeof rawText !== "string") {
     throw AppError.badRequest("Job description text is required");
@@ -13017,7 +13631,7 @@ function normalizeJobDescription(rawText) {
   };
 }
 
-// apps/api/src/utils/job-validator.ts
+// src/utils/job-validator.ts
 var KNOWN_SKILL_ALIASES = {
   js: "JavaScript",
   javascript: "JavaScript",
@@ -13224,7 +13838,7 @@ function validateAndSanitizeJobAnalysis(analysis, sourceText) {
   };
 }
 
-// apps/api/src/ai/prompts/job-analyzer.prompt.ts
+// src/ai/prompts/job-analyzer.prompt.ts
 var JOB_ANALYZER_SYSTEM_PROMPT = `You are a specialized Job Description Analysis Engine. Your sole purpose is to analyze raw job description text and extract structured, validated, evidence-backed requirements into the specified JSON schema.
 
 CRITICAL RULES:
@@ -13301,7 +13915,7 @@ Output a JSON object conforming strictly to the JobAnalysisSchema with the follo
 }`;
 }
 
-// apps/api/src/services/job.service.ts
+// src/services/job.service.ts
 var JobService = class {
   constructor(jobRepo = jobRepository) {
     this.jobRepo = jobRepo;
@@ -13440,7 +14054,7 @@ var JobService = class {
 };
 var jobService = new JobService();
 
-// apps/api/src/documents/document-extractor.service.ts
+// src/documents/document-extractor.service.ts
 import mammoth from "mammoth";
 var DocumentExtractionService = class {
   async extractPdf(buffer) {
@@ -13715,7 +14329,7 @@ ${p.text}
 };
 var documentExtractionService = new DocumentExtractionService();
 
-// apps/api/src/controllers/job.controller.ts
+// src/controllers/job.controller.ts
 var JobController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -13785,7 +14399,7 @@ var JobController = class {
 };
 var jobController = new JobController();
 
-// apps/api/src/routes/jobs.routes.ts
+// src/routes/jobs.routes.ts
 var jobRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", jobController.list.bind(jobController));
@@ -13796,7 +14410,7 @@ var jobRoutes = async (fastify2) => {
   fastify2.delete("/:id", jobController.delete.bind(jobController));
 };
 
-// apps/api/src/repositories/workflow.repository.ts
+// src/repositories/workflow.repository.ts
 var WorkflowRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.aIWorkflowRun.findFirst({
@@ -13879,7 +14493,7 @@ var WorkflowRepository = class {
 };
 var workflowRepository = new WorkflowRepository();
 
-// apps/api/src/ai/prompts/resume-parser.prompt.ts
+// src/ai/prompts/resume-parser.prompt.ts
 var RESUME_PARSER_SYSTEM_PROMPT = `You are an elite, loss-minimizing resume data extraction engine. Your sole purpose is to extract complete structured data from resume text into the specified JSON schema.
 
 CRITICAL EXTRACTION & FIDELITY RULES:
@@ -14054,7 +14668,7 @@ Output ONLY a JSON object with this exact structure:
 }`;
 }
 
-// apps/api/src/ai/prompts/resume-strategy.prompt.ts
+// src/ai/prompts/resume-strategy.prompt.ts
 var RESUME_STRATEGY_SYSTEM_PROMPT = `You are a resume strategy planner. You are NOT a resume writer.
 
 Your sole objective is: Given the candidate's existing evidence and the target job requirements, formulate the safest, most transparent, and highest-value strategic presentation plan for the candidate's existing experience.
@@ -14118,7 +14732,7 @@ ${JSON.stringify(context || {}, null, 2)}
 Output a JSON object conforming strictly to the ResumeStrategySchema.`;
 }
 
-// apps/api/src/ai/prompts/content-writer.prompt.ts
+// src/ai/prompts/content-writer.prompt.ts
 var RESUME_CONTENT_WRITER_SYSTEM_PROMPT = `You are an elite, truth-preserving AI Resume Content Writer for ResumeAI.
 
 Your objective is to improve the candidate's resume content (summary, experience bullets, project descriptions, and skill wording) to achieve clearer wording, stronger impact, and natural alignment with the target job, strictly guided by the candidate's ResumeStrategy.
@@ -14203,7 +14817,7 @@ ${JSON.stringify(context || {}, null, 2)}
 Produce a complete ContentProposalData JSON object containing only safe, evidence-supported rewrites.`;
 }
 
-// apps/api/src/ai/evidence/evidence-map.ts
+// src/ai/evidence/evidence-map.ts
 var KNOWN_DATABASES = /* @__PURE__ */ new Set([
   "postgresql",
   "postgres",
@@ -14419,7 +15033,7 @@ function isTechnologySupported(term, evidenceMap, fullResumeRawText) {
   return false;
 }
 
-// apps/api/src/ai/fact-guard/fact-guard-engine.ts
+// src/ai/fact-guard/fact-guard-engine.ts
 function extractCandidateTechnologies(resume) {
   const techs = /* @__PURE__ */ new Set();
   const addTerm = (term) => {
@@ -15170,7 +15784,7 @@ function verifyProposedChanges(changes, resumeData) {
   };
 }
 
-// apps/api/src/utils/strategy-validator.ts
+// src/utils/strategy-validator.ts
 function validateAndSanitizeStrategy(rawStrategy, resumeData, jobAnalysis, matchAnalysis) {
   const parseResult = ResumeStrategySchema.safeParse(rawStrategy);
   if (!parseResult.success) {
@@ -15239,7 +15853,7 @@ function validateAndSanitizeStrategy(rawStrategy, resumeData, jobAnalysis, match
   return strategy;
 }
 
-// apps/api/src/ai/agents/index.ts
+// src/ai/agents/index.ts
 var defaultRetryPolicy = {
   maxRetries: 3,
   initialBackoffMs: 1e3,
@@ -15554,7 +16168,7 @@ var registeredAgents = {
   [AgentName.QUALITY_REVIEWER]: new QualityReviewerAgent()
 };
 
-// apps/api/src/ai/workflows/index.ts
+// src/ai/workflows/index.ts
 var WORKFLOW_DEFINITIONS = {
   [WorkflowType.CREATE_RESUME]: {
     type: WorkflowType.CREATE_RESUME,
@@ -15622,8 +16236,8 @@ var WorkflowOrchestrator = class {
 };
 var workflowOrchestrator = new WorkflowOrchestrator();
 
-// apps/api/src/services/workflow.service.ts
-import crypto3 from "crypto";
+// src/services/workflow.service.ts
+import crypto4 from "crypto";
 var WorkflowService = class {
   constructor(workflowRepo = workflowRepository, orchestrator = workflowOrchestrator) {
     this.workflowRepo = workflowRepo;
@@ -15652,7 +16266,7 @@ var WorkflowService = class {
     return run;
   }
   async triggerWorkflow(userId, req) {
-    const workflowId = crypto3.randomUUID();
+    const workflowId = crypto4.randomUUID();
     const workflowRun = await this.workflowRepo.create({
       userId,
       resumeId: req.resumeId,
@@ -15694,7 +16308,7 @@ var WorkflowService = class {
 };
 var workflowService = new WorkflowService();
 
-// apps/api/src/controllers/workflow.controller.ts
+// src/controllers/workflow.controller.ts
 var WorkflowController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -15724,7 +16338,7 @@ var WorkflowController = class {
 };
 var workflowController = new WorkflowController();
 
-// apps/api/src/routes/workflows.routes.ts
+// src/routes/workflows.routes.ts
 var workflowRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", workflowController.list.bind(workflowController));
@@ -15732,7 +16346,7 @@ var workflowRoutes = async (fastify2) => {
   fastify2.get("/:id", workflowController.getById.bind(workflowController));
 };
 
-// apps/api/src/services/user.service.ts
+// src/services/user.service.ts
 function toUserProfile(user) {
   return {
     id: user.id,
@@ -15770,7 +16384,7 @@ var UserService = class {
 };
 var userService = new UserService();
 
-// apps/api/src/controllers/user.controller.ts
+// src/controllers/user.controller.ts
 var UserController = class {
   async getMe(request, reply) {
     const profile = await userService.getProfile(request.user.id);
@@ -15784,7 +16398,7 @@ var UserController = class {
 };
 var userController = new UserController();
 
-// apps/api/src/routes/users.routes.ts
+// src/routes/users.routes.ts
 var userRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/me", userController.getMe.bind(userController));
@@ -15792,10 +16406,10 @@ var userRoutes = async (fastify2) => {
   fastify2.get("/profile", userController.getMe.bind(userController));
 };
 
-// apps/api/src/services/import.service.ts
+// src/services/import.service.ts
 import path4 from "node:path";
 
-// apps/api/src/repositories/import.repository.ts
+// src/repositories/import.repository.ts
 var ImportRepository = class {
   async create(data) {
     return prisma.resumeImport.create({
@@ -15879,7 +16493,7 @@ var ImportRepository = class {
 };
 var importRepository = new ImportRepository();
 
-// apps/api/src/documents/extraction-validator.ts
+// src/documents/extraction-validator.ts
 function validateExtraction(extracted) {
   const warnings = [...extracted.warnings];
   if (extracted.isScannedOrImageOnly) {
@@ -15937,7 +16551,7 @@ function validateExtraction(extracted) {
   };
 }
 
-// apps/api/src/ai/validators/parse-completeness.validator.ts
+// src/ai/validators/parse-completeness.validator.ts
 function validateParseCompleteness(sourceText, resumeData) {
   const warnings = [];
   const textLower = sourceText.toLowerCase();
@@ -16021,7 +16635,7 @@ function validateParseCompleteness(sourceText, resumeData) {
   return warnings;
 }
 
-// apps/api/src/storage/local.storage.ts
+// src/storage/local.storage.ts
 import fs2 from "fs/promises";
 import path2 from "path";
 var LocalStorageProvider = class {
@@ -16089,7 +16703,7 @@ var LocalStorageProvider = class {
   }
 };
 
-// apps/api/src/storage/s3.storage.ts
+// src/storage/s3.storage.ts
 import {
   S3Client,
   PutObjectCommand,
@@ -16290,7 +16904,7 @@ var S3StorageProvider = class {
   }
 };
 
-// apps/api/src/storage/storage-path.util.ts
+// src/storage/storage-path.util.ts
 import path3 from "node:path";
 function sanitizeFilenameForStorage(filename) {
   if (!filename || typeof filename !== "string") {
@@ -16324,7 +16938,7 @@ function buildImportStorageKey(userId, importId, originalFilename) {
   return key;
 }
 
-// apps/api/src/storage/index.ts
+// src/storage/index.ts
 var storageInstance = null;
 function getStorageProvider() {
   if (storageInstance) return storageInstance;
@@ -16352,7 +16966,7 @@ function getStorageProvider() {
   return storageInstance;
 }
 
-// apps/api/src/services/import.service.ts
+// src/services/import.service.ts
 var ResumeImportService = class {
   async processImport(userId, fileBuffer, options) {
     const startTime = Date.now();
@@ -16726,7 +17340,7 @@ var ResumeImportService = class {
 };
 var resumeImportService = new ResumeImportService();
 
-// apps/api/src/controllers/import.controller.ts
+// src/controllers/import.controller.ts
 var ImportController = class {
   async importResume(request, reply) {
     const file = await request.file();
@@ -16800,7 +17414,7 @@ var ImportController = class {
 };
 var importController = new ImportController();
 
-// apps/api/src/routes/import.routes.ts
+// src/routes/import.routes.ts
 var importRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post("/", importController.importResume.bind(importController));
@@ -16811,7 +17425,7 @@ var importRoutes = async (fastify2) => {
   fastify2.delete("/:id", importController.deleteImport.bind(importController));
 };
 
-// apps/api/src/services/match.service.ts
+// src/services/match.service.ts
 var MatchService = class {
   matchRepo = matchRepository;
   resumeRepo = resumeRepository;
@@ -16954,7 +17568,7 @@ var MatchService = class {
 };
 var matchService = new MatchService();
 
-// apps/api/src/controllers/match.controller.ts
+// src/controllers/match.controller.ts
 var MatchController = class {
   async list(request, reply) {
     const page = parseInt(request.query.page ?? "1", 10);
@@ -16997,7 +17611,7 @@ var MatchController = class {
 };
 var matchController = new MatchController();
 
-// apps/api/src/routes/matches.routes.ts
+// src/routes/matches.routes.ts
 var matchRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.get("/", matchController.list.bind(matchController));
@@ -17006,7 +17620,7 @@ var matchRoutes = async (fastify2) => {
   fastify2.delete("/:id", matchController.delete.bind(matchController));
 };
 
-// apps/api/src/repositories/strategy.repository.ts
+// src/repositories/strategy.repository.ts
 var StrategyRepository = class {
   async findByIdAndUserId(id, userId) {
     return prisma.resumeStrategy.findFirst({
@@ -17215,7 +17829,7 @@ var StrategyRepository = class {
 };
 var strategyRepository = new StrategyRepository();
 
-// apps/api/src/services/strategy.service.ts
+// src/services/strategy.service.ts
 var StrategyService = class {
   strategyRepo = strategyRepository;
   resumeRepo = resumeRepository;
@@ -17464,7 +18078,7 @@ var StrategyService = class {
 };
 var strategyService = new StrategyService();
 
-// apps/api/src/controllers/strategy.controller.ts
+// src/controllers/strategy.controller.ts
 var StrategyController = class {
   service = strategyService;
   async createStrategy(request, reply) {
@@ -17527,7 +18141,7 @@ var StrategyController = class {
 };
 var strategyController = new StrategyController();
 
-// apps/api/src/routes/strategies.routes.ts
+// src/routes/strategies.routes.ts
 var strategyRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post("/", strategyController.createStrategy.bind(strategyController));
@@ -17551,7 +18165,7 @@ var strategyRoutes = async (fastify2) => {
   );
 };
 
-// apps/api/src/repositories/content-proposal.repository.ts
+// src/repositories/content-proposal.repository.ts
 var ContentProposalRepository = class {
   async findById(id) {
     return prisma.contentProposal.findUnique({
@@ -17788,7 +18402,7 @@ var ContentProposalRepository = class {
 };
 var contentProposalRepository = new ContentProposalRepository();
 
-// apps/api/src/ai/prompts/section-regeneration.prompt.ts
+// src/ai/prompts/section-regeneration.prompt.ts
 var SECTION_REGENERATION_SYSTEM_PROMPT = `You are the ResumeAI Section Regeneration Assistant.
 Your mission is to rewrite and optimize individual resume sections for maximum ATS impact and clarity while strictly honoring the FACT GUARD invariant:
 
@@ -17964,7 +18578,7 @@ Note: "evidenceIds" must cite valid evidence IDs from the repository above.
   return prompt;
 }
 
-// apps/api/src/services/content-writer.service.ts
+// src/services/content-writer.service.ts
 var ContentWriterService = class {
   proposalRepo = contentProposalRepository;
   resumeRepo = resumeRepository;
@@ -18769,7 +19383,7 @@ MANDATORY SELF-HEALING RULES FOR RETRY:
 };
 var contentWriterService = new ContentWriterService();
 
-// apps/api/src/controllers/content-writer.controller.ts
+// src/controllers/content-writer.controller.ts
 var ContentWriterController = class {
   service = contentWriterService;
   async generateProposal(request, reply) {
@@ -18832,7 +19446,7 @@ var ContentWriterController = class {
 };
 var contentWriterController = new ContentWriterController();
 
-// apps/api/src/routes/content-writer.routes.ts
+// src/routes/content-writer.routes.ts
 var contentWriterRoutes = async (fastify2) => {
   fastify2.addHook("preHandler", authenticate);
   fastify2.post(
@@ -18869,7 +19483,7 @@ var contentWriterRoutes = async (fastify2) => {
   );
 };
 
-// apps/api/src/routes/test-pdf.routes.ts
+// src/routes/test-pdf.routes.ts
 function createRepresentativeResume(length = "normal") {
   const resume = createDefaultResumeData("Yash Sharma");
   resume.personalInfo = {
@@ -19155,10 +19769,217 @@ var testPdfRoutes = async (app) => {
   });
 };
 
-// apps/api/src/routes/index.ts
+// src/controllers/whop-webhook.controller.ts
+var WhopWebhookController = class {
+  /**
+   * GET /api/webhooks/whop
+   * Health and readiness check for the Whop webhook endpoint.
+   */
+  async health(_request, reply) {
+    const secretConfigured = Boolean(
+      (process.env.WHOP_WEBHOOK_SECRET || env.WHOP_WEBHOOK_SECRET)?.trim()
+    );
+    return reply.status(200).send({
+      success: true,
+      data: {
+        provider: "whop",
+        endpoint: "/api/webhooks/whop",
+        status: "ready",
+        webhookSecretConfigured: secretConfigured,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    });
+  }
+  /**
+   * POST /api/webhooks/whop
+   * Verifies the raw request body signature using HMAC-SHA256 (Standard Webhooks / Whop spec)
+   * before parsing JSON and processing the event idempotently.
+   */
+  async handleWebhook(request, reply) {
+    const secret = process.env.WHOP_WEBHOOK_SECRET?.trim() || env.WHOP_WEBHOOK_SECRET?.trim();
+    if (!secret) {
+      request.log.error(
+        { provider: "whop" },
+        "WHOP_WEBHOOK_SECRET is not configured on the server"
+      );
+      return reply.status(500).send({
+        success: false,
+        error: {
+          code: "WEBHOOK_SECRET_NOT_CONFIGURED",
+          message: "Webhook verification secret is not configured"
+        }
+      });
+    }
+    let rawBody;
+    if (Buffer.isBuffer(request.body)) {
+      rawBody = request.body;
+    } else if (typeof request.rawBody === "string" || Buffer.isBuffer(request.rawBody)) {
+      rawBody = request.rawBody;
+    } else if (typeof request.body === "string") {
+      rawBody = request.body;
+    }
+    if (!rawBody || Buffer.isBuffer(rawBody) && rawBody.length === 0 || typeof rawBody === "string" && rawBody.length === 0) {
+      request.log.warn(
+        { provider: "whop" },
+        "Rejected Whop webhook: empty or non-raw request body"
+      );
+      return reply.status(400).send({
+        success: false,
+        error: {
+          code: "INVALID_WEBHOOK_BODY",
+          message: "Raw request body is required for webhook signature verification"
+        }
+      });
+    }
+    const headers = request.headers;
+    const signatureHeader = (typeof headers["webhook-signature"] === "string" ? headers["webhook-signature"] : Array.isArray(headers["webhook-signature"]) ? headers["webhook-signature"][0] : void 0) || (typeof headers["x-whop-signature"] === "string" ? headers["x-whop-signature"] : Array.isArray(headers["x-whop-signature"]) ? headers["x-whop-signature"][0] : "") || "";
+    if (!signatureHeader) {
+      request.log.warn(
+        {
+          provider: "whop",
+          webhookId: headers["webhook-id"] ?? null
+        },
+        "Rejected Whop webhook: missing signature header"
+      );
+      return reply.status(401).send({
+        success: false,
+        error: {
+          code: "MISSING_WEBHOOK_SIGNATURE",
+          message: "Missing webhook signature header"
+        }
+      });
+    }
+    const provider = new WhopPaymentProvider(secret);
+    const isValidSignature = provider.verifyWebhookSignature(
+      rawBody,
+      signatureHeader,
+      headers
+    );
+    if (!isValidSignature) {
+      request.log.warn(
+        {
+          provider: "whop",
+          webhookId: headers["webhook-id"] ?? null,
+          webhookTimestamp: headers["webhook-timestamp"] ?? null
+        },
+        "Rejected Whop webhook: invalid signature or expired timestamp"
+      );
+      return reply.status(401).send({
+        success: false,
+        error: {
+          code: "INVALID_WEBHOOK_SIGNATURE",
+          message: "Invalid webhook signature"
+        }
+      });
+    }
+    const rawBodyString = Buffer.isBuffer(rawBody) ? rawBody.toString("utf8") : rawBody;
+    let parsedPayload;
+    try {
+      parsedPayload = JSON.parse(rawBodyString);
+    } catch {
+      request.log.warn(
+        { provider: "whop", webhookId: headers["webhook-id"] ?? null },
+        "Rejected Whop webhook: invalid JSON payload"
+      );
+      return reply.status(400).send({
+        success: false,
+        error: {
+          code: "INVALID_JSON_PAYLOAD",
+          message: "Webhook body is not valid JSON"
+        }
+      });
+    }
+    try {
+      const result = await whopWebhookService.processWebhook(
+        parsedPayload,
+        headers
+      );
+      request.log.info(
+        {
+          provider: "whop",
+          eventId: result.eventId,
+          eventType: result.eventType,
+          duplicate: result.duplicate,
+          status: result.status,
+          userId: result.userId ?? null,
+          subscriptionTier: result.subscriptionTier ?? null
+        },
+        result.duplicate ? "Duplicate Whop webhook event acknowledged" : "Whop webhook event processed successfully"
+      );
+      return reply.status(200).send({
+        success: true,
+        data: {
+          received: true,
+          eventId: result.eventId,
+          eventType: result.eventType,
+          duplicate: result.duplicate,
+          status: result.status
+        }
+      });
+    } catch (err) {
+      const isPayloadValidationError = err instanceof Error && err.message.startsWith("Invalid Whop webhook payload");
+      if (isPayloadValidationError) {
+        request.log.warn(
+          {
+            provider: "whop",
+            webhookId: headers["webhook-id"] ?? null,
+            reason: err.message
+          },
+          "Rejected Whop webhook due to malformed payload structure"
+        );
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: "INVALID_WEBHOOK_PAYLOAD",
+            message: err.message
+          }
+        });
+      }
+      request.log.error(
+        {
+          provider: "whop",
+          webhookId: headers["webhook-id"] ?? null,
+          error: err instanceof Error ? err.message : String(err)
+        },
+        "Failed to process Whop webhook event"
+      );
+      return reply.status(500).send({
+        success: false,
+        error: {
+          code: "WEBHOOK_PROCESSING_ERROR",
+          message: "Internal error processing webhook event"
+        }
+      });
+    }
+  }
+};
+var whopWebhookController = new WhopWebhookController();
+
+// src/routes/webhooks.routes.ts
+var webhookRoutes = async (fastify2) => {
+  fastify2.removeContentTypeParser("application/json");
+  fastify2.addContentTypeParser(
+    "application/json",
+    { parseAs: "buffer" },
+    (_req, body, done) => {
+      done(null, body);
+    }
+  );
+  fastify2.get(
+    "/whop",
+    whopWebhookController.health.bind(whopWebhookController)
+  );
+  fastify2.post(
+    "/whop",
+    whopWebhookController.handleWebhook.bind(whopWebhookController)
+  );
+};
+
+// src/routes/index.ts
 var apiRoutes = async (fastify2) => {
   await fastify2.register(healthRoutes);
   await fastify2.register(authRoutes, { prefix: "/auth" });
+  await fastify2.register(webhookRoutes, { prefix: "/webhooks" });
   await fastify2.register(importRoutes, { prefix: "/imports" });
   await fastify2.register(resumeRoutes, { prefix: "/resumes" });
   await fastify2.register(jobRoutes, { prefix: "/jobs" });
@@ -19170,7 +19991,7 @@ var apiRoutes = async (fastify2) => {
   await fastify2.register(testPdfRoutes, { prefix: "/test" });
 };
 
-// apps/api/src/app.ts
+// src/app.ts
 async function buildApp() {
   const app = fastify({
     logger: env.NODE_ENV !== "test" ? loggerConfig : false,
@@ -19210,7 +20031,15 @@ async function buildApp() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "webhook-id",
+      "webhook-timestamp",
+      "webhook-signature",
+      "x-whop-signature"
+    ]
   });
   const isTest = process.env.NODE_ENV === "test" || env.NODE_ENV === "test";
   const isProd = process.env.NODE_ENV === "production" || env.NODE_ENV === "production";
@@ -19254,7 +20083,7 @@ async function buildApp() {
   return app;
 }
 
-// apps/api/src/serverless.ts
+// src/serverless.ts
 var appPromise = null;
 async function getApp() {
   if (!appPromise) {

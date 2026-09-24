@@ -37,6 +37,23 @@ export function getAuthCookieOptions(): CookieSerializeOptions {
     sameSite,
     path: "/",
     maxAge: parseDurationToSeconds(env.JWT_EXPIRES_IN),
-    signed: false, // We use standard HttpOnly JWT so it can also be inspected if needed or kept simple
+    signed: false,
+  };
+}
+
+/**
+ * Returns canonical cookie deletion options matching getAuthCookieOptions()
+ * (same name, path, httpOnly, secure, sameSite) so the browser removes the cookie reliably.
+ */
+export function getClearAuthCookieOptions(): CookieSerializeOptions {
+  const { httpOnly, secure, sameSite, path } = getAuthCookieOptions();
+  return {
+    httpOnly,
+    secure,
+    sameSite,
+    path,
+    maxAge: 0,
+    expires: new Date(0),
+    signed: false,
   };
 }

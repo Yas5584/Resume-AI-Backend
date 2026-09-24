@@ -71,17 +71,21 @@ enum ResumeQualityReportStatus {
 }
 
 model User {
-  id               String           @id @default(uuid())
-  email            String           @unique
-  name             String
-  passwordHash     String
-  role             Role             @default(USER)
-  subscriptionTier SubscriptionTier @default(FREE)
-  creditsBalance   Int              @default(10)
-  emailVerified    DateTime?
-  image            String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                    String           @id @default(uuid())
+  email                 String           @unique
+  name                  String
+  passwordHash          String
+  role                  Role             @default(USER)
+  subscriptionTier      SubscriptionTier @default(FREE)
+  subscriptionStatus    String           @default("inactive")
+  subscriptionExpiresAt DateTime?
+  whopUserId            String?          @unique
+  whopMembershipId      String?
+  creditsBalance        Int              @default(10)
+  emailVerified         DateTime?
+  image                 String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   resumes             Resume[]
   jobDescriptions     JobDescription[]
@@ -95,6 +99,7 @@ model User {
   strategies          ResumeStrategy[]
   contentProposals    ContentProposal[]
   qualityReports      ResumeQualityReport[]
+  whopSubscriptions   WhopSubscription[]
 
   @@map("users")
 }
@@ -437,3 +442,51 @@ model ResumeQualityReport {
   @@index([status])
   @@map("resume_quality_reports")
 }
+
+model WhopSubscription {
+  id                 String           @id @default(uuid())
+  userId             String?
+  whopUserId         String?
+  whopMembershipId   String           @unique
+  whopProductId      String?
+  whopPlanId         String?
+  email              String?
+  status             String           @default("active")
+  tier               SubscriptionTier @default(PRO)
+  cancelAtPeriodEnd  Boolean          @default(false)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  rawMetadata        Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([whopUserId])
+  @@index([email])
+  @@index([status])
+  @@map("whop_subscriptions")
+}
+
+model WebhookEvent {
+  id               String    @id @default(uuid())
+  provider         String    @default("whop")
+  eventId          String    @unique
+  eventType        String
+  status           String    @default("PROCESSING")
+  userId           String?
+  whopUserId       String?
+  whopMembershipId String?
+  payload          Json
+  errorMessage     String?
+  processedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([provider, eventType])
+  @@index([status])
+  @@index([userId])
+  @@index([whopUserId])
+  @@map("webhook_events")
+}
+

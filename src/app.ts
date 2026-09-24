@@ -67,7 +67,15 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "webhook-id",
+      "webhook-timestamp",
+      "webhook-signature",
+      "x-whop-signature",
+    ],
   });
 
   // Rate Limiting (Default: 100 requests per minute per IP, relaxed in test environment)

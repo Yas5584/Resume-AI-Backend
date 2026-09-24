@@ -10,10 +10,12 @@ import { matchRoutes } from "./matches.routes.js";
 import { strategyRoutes } from "./strategies.routes.js";
 import { contentWriterRoutes } from "./content-writer.routes.js";
 import { testPdfRoutes } from "./test-pdf.routes.js";
+import { webhookRoutes } from "./webhooks.routes.js";
 
 export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
   await fastify.register(authRoutes, { prefix: "/auth" });
+  await fastify.register(webhookRoutes, { prefix: "/webhooks" });
   await fastify.register(importRoutes, { prefix: "/imports" });
   await fastify.register(resumeRoutes, { prefix: "/resumes" });
   await fastify.register(jobRoutes, { prefix: "/jobs" });

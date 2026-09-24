@@ -9,6 +9,7 @@ import { env } from "../config/index.js";
 import { AppError } from "../errors/index.js";
 import { RegisterRequest, LoginRequest, AuthUser } from "@resumeai/shared";
 import { User } from "@resumeai/database";
+import { whopWebhookService } from "./whop-webhook.service.js";
 
 export function toAuthUser(user: User): AuthUser {
   return {
@@ -62,11 +63,17 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
 
-    const user = await this.userRepo.create({
+    let user = await this.userRepo.create({
       email,
       name: data.name.trim(),
       passwordHash,
     });
+
+    // Reconcile any Whop subscription created before registration
+    await whopWebhookService
+      .reconcileUserEntitlements(user.id, user.email)
+      .catch(() => {});
+    user = (await this.userRepo.findById(user.id)) ?? user;
 
     const sessionId = crypto.randomUUID();
     const expiresAt = new Date(
@@ -125,13 +132,20 @@ export class AuthService {
     };
   }
 
-  async logout(sessionId?: string, token?: string): Promise<void> {
+  async logout(
+    sessionId?: string,
+    token?: string,
+    userId?: string,
+  ): Promise<void> {
     if (sessionId) {
       await this.userRepo.deleteSessionById(sessionId);
       await this.userRepo.deleteSessionByToken(sessionId);
     }
     if (token) {
       await this.userRepo.deleteSessionByToken(token);
+    }
+    if (userId) {
+      await this.userRepo.deleteUserSessions(userId);
     }
   }
 
