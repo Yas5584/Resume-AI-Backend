@@ -9,5 +9,7 @@
       "@resumeai/config": ["./packages/config/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "api/**/*", "packages/**/*"]
+  "include": ["src/**/*", "api/**/*", "packages/**/*"],
+  "exclude": ["tests/**/*", "node_modules", "dist"]
 }
+

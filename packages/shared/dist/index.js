@@ -2074,6 +2074,22 @@ function getSafeRedirect(url) {
   }
   return trimmed;
 }
+
+// packages/shared/src/utils/delimited.ts
+function parseDelimitedValues(raw, existing = []) {
+  const seen = new Set(existing.map((v) => v.trim().toLowerCase()));
+  const result = [];
+  for (const part of raw.split(/[,\r\n]+/)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      result.push(trimmed);
+    }
+  }
+  return result;
+}
 export {
   AIQualityAnalysisOutputSchema,
   AIQualityFindingSchema,
@@ -2261,5 +2277,6 @@ export {
   isDummyExperience,
   isDummyProject,
   normalizeTemplateId,
+  parseDelimitedValues,
   tryParseJsonObject
 };

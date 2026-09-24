@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseDelimitedValues } from "../../web/src/lib/delimited.js";
+import { parseDelimitedValues } from "@resumeai/shared";
+
 
 describe("TagInput & parseDelimitedValues — Technologies & Skills Parsing", () => {
   describe("Technology Input Requirements (Bug #2)", () => {
