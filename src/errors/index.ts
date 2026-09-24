@@ -2,7 +2,10 @@ import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import { ErrorCode, ErrorCodeType } from "@resumeai/shared";
 import { env } from "../config/index.js";
-import { AUTH_COOKIE_NAME } from "../utils/cookies.js";
+import { AUTH_COOKIE_NAME, getClearAuthCookieOptions } from "../utils/cookies.js";
+
+
+
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -66,12 +69,7 @@ export function errorHandler(
       request.cookies &&
       request.cookies[AUTH_COOKIE_NAME]
     ) {
-      reply.clearCookie(AUTH_COOKIE_NAME, {
-        path: "/",
-        httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
+      reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
     }
 
     return reply.status(error.statusCode).send({

@@ -27,9 +27,17 @@ function parseDurationToSeconds(durationStr: string): number {
 }
 
 export function getAuthCookieOptions(): CookieSerializeOptions {
-  const sameSite = env.COOKIE_SAME_SITE;
-  // Browsers reject SameSite=None cookies unless secure=true
-  const secure = sameSite === "none" ? true : env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production";
+  // If explicitly set in environment, use that; otherwise default to "none" in production
+  // (required for Whop embedded iframe) and "lax" in local development.
+  const sameSite =
+    env.COOKIE_SAME_SITE !== "lax"
+      ? env.COOKIE_SAME_SITE
+      : isProd
+        ? "none"
+        : "lax";
+
+  const secure = sameSite === "none" ? true : isProd;
 
   return {
     httpOnly: true,

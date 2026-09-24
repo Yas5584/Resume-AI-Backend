@@ -37,6 +37,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(helmet, {
     contentSecurityPolicy: env.NODE_ENV === "production",
     crossOriginEmbedderPolicy: false,
+    frameguard: false,
   });
 
   // Parse allowed origins list
@@ -53,13 +54,16 @@ export async function buildApp(): Promise<FastifyInstance> {
         ...configuredOrigins,
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://whop.com",
       ];
 
       if (
         allowedOrigins.includes(origin) ||
         (process.env.NODE_ENV !== "production" &&
           /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) ||
-        /^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin)
+        /^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin) ||
+        /^https:\/\/([a-zA-Z0-9_-]+\.)*whop\.com$/.test(origin) ||
+        origin === "https://whop.com"
       ) {
         return cb(null, true);
       }

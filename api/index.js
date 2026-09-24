@@ -2294,8 +2294,9 @@ function parseDurationToSeconds(durationStr) {
   }
 }
 function getAuthCookieOptions() {
-  const sameSite = env.COOKIE_SAME_SITE;
-  const secure = sameSite === "none" ? true : env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production";
+  const sameSite = env.COOKIE_SAME_SITE !== "lax" ? env.COOKIE_SAME_SITE : isProd ? "none" : "lax";
+  const secure = sameSite === "none" ? true : isProd;
   return {
     httpOnly: true,
     secure,
@@ -2357,12 +2358,7 @@ function errorHandler(error, request, reply) {
   request.log.error(error);
   if (error instanceof AppError) {
     if (error.statusCode === 401 && request.cookies && request.cookies[AUTH_COOKIE_NAME]) {
-      reply.clearCookie(AUTH_COOKIE_NAME, {
-        path: "/",
-        httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: "lax"
-      });
+      reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
     }
     return reply.status(error.statusCode).send({
       success: false,
@@ -20013,7 +20009,8 @@ async function buildApp() {
   });
   await app.register(helmet, {
     contentSecurityPolicy: env.NODE_ENV === "production",
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    frameguard: false
   });
   const configuredOrigins = env.API_CORS_ORIGIN ? env.API_CORS_ORIGIN.split(",").map((o) => o.trim()) : [];
   await app.register(cors, {
@@ -20022,9 +20019,10 @@ async function buildApp() {
       const allowedOrigins = [
         ...configuredOrigins,
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "https://whop.com"
       ];
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production" && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin)) {
+      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production" && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin) || /^https:\/\/([a-zA-Z0-9_-]+\.)*whop\.com$/.test(origin) || origin === "https://whop.com") {
         return cb(null, true);
       }
       return cb(new Error("CORS not allowed"), false);
