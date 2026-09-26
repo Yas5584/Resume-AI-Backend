@@ -67,9 +67,25 @@ const EnvSchema = z.object({
   B2_REGION: z.string().default("us-east-005"),
   B2_INTEGRATION_TEST: z.string().optional(),
 
-  // Whop Monetization & Webhook Configuration
+  // Whop Monetization, OAuth & Webhook Configuration
+  WHOP_APP_ID: z.string().optional(),
   WHOP_API_KEY: z.string().optional(),
+  WHOP_CLIENT_ID: z.string().optional(),
+  WHOP_CLIENT_SECRET: z.string().optional(),
   WHOP_WEBHOOK_SECRET: z.string().optional(),
+  WHOP_SANDBOX: z
+    .string()
+    .optional()
+    .transform((v) => v === "true")
+    .default("false"),
+  APP_URL: z
+    .string()
+    .default(
+      process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.APP_URL ||
+        "https://resume-ai-frontend-sand.vercel.app",
+    ),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.STORAGE_PROVIDER === "b2") {
     const keyId = data.B2_KEY_ID || data.S3_ACCESS_KEY_ID;

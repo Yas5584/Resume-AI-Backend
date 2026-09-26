@@ -159,9 +159,17 @@ var EnvSchema = z.object({
   B2_ENDPOINT: z.string().default("https://s3.us-east-005.backblazeb2.com"),
   B2_REGION: z.string().default("us-east-005"),
   B2_INTEGRATION_TEST: z.string().optional(),
-  // Whop Monetization & Webhook Configuration
+  // Whop Monetization, OAuth & Webhook Configuration
+  WHOP_APP_ID: z.string().optional(),
   WHOP_API_KEY: z.string().optional(),
-  WHOP_WEBHOOK_SECRET: z.string().optional()
+  WHOP_CLIENT_ID: z.string().optional(),
+  WHOP_CLIENT_SECRET: z.string().optional(),
+  WHOP_WEBHOOK_SECRET: z.string().optional(),
+  WHOP_SANDBOX: z.string().optional().transform((v) => v === "true").default("false"),
+  APP_URL: z.string().default(
+    process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://resume-ai-frontend-sand.vercel.app"
+  ),
+  NEXT_PUBLIC_APP_URL: z.string().optional()
 }).superRefine((data, ctx) => {
   if (data.STORAGE_PROVIDER === "b2") {
     const keyId = data.B2_KEY_ID || data.S3_ACCESS_KEY_ID;
@@ -2318,6 +2326,33 @@ function getClearAuthCookieOptions() {
     signed: false
   };
 }
+var WHOP_PKCE_COOKIE_NAME = "whop_pkce";
+function getWhopPkceCookieOptions() {
+  const isProd = env.NODE_ENV === "production";
+  const sameSite = env.COOKIE_SAME_SITE !== "lax" ? env.COOKIE_SAME_SITE : isProd ? "none" : "lax";
+  const secure = sameSite === "none" ? true : isProd;
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: "/",
+    maxAge: 600,
+    // 10 minutes
+    signed: false
+  };
+}
+function getClearWhopPkceCookieOptions() {
+  const { httpOnly, secure, sameSite, path: path5 } = getWhopPkceCookieOptions();
+  return {
+    httpOnly,
+    secure,
+    sameSite,
+    path: path5,
+    maxAge: 0,
+    expires: /* @__PURE__ */ new Date(0),
+    signed: false
+  };
+}
 
 // src/errors/index.ts
 var AppError = class _AppError extends Error {
@@ -2603,6 +2638,49 @@ var UserRepository = class {
   async deleteUserSessions(userId) {
     await prisma.session.deleteMany({
       where: { userId }
+    });
+  }
+  // Whop Identity Management
+  async findWhopIdentityByWhopUserId(whopUserId) {
+    return prisma.whopIdentity.findUnique({
+      where: { whopUserId },
+      include: { user: true }
+    });
+  }
+  async findByWhopUserId(whopUserId) {
+    return prisma.user.findUnique({
+      where: { whopUserId }
+    });
+  }
+  async createWhopIdentity(data) {
+    return prisma.whopIdentity.create({
+      data: {
+        userId: data.userId,
+        whopUserId: data.whopUserId,
+        email: data.email ?? null
+      }
+    });
+  }
+  async createWhopUser(data) {
+    return prisma.user.create({
+      data: {
+        email: data.email.toLowerCase().trim(),
+        name: data.name.trim(),
+        passwordHash: data.passwordHash,
+        whopUserId: data.whopUserId,
+        emailVerified: data.emailVerified,
+        image: data.image
+      }
+    });
+  }
+  async linkWhopUser(userId, data) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        whopUserId: data.whopUserId,
+        ...data.emailVerified ? { emailVerified: data.emailVerified } : {},
+        ...data.image ? { image: data.image } : {}
+      }
     });
   }
 };
@@ -3215,21 +3293,7 @@ var AuthService = class {
     await whopWebhookService.reconcileUserEntitlements(user.id, user.email).catch(() => {
     });
     user = await this.userRepo.findById(user.id) ?? user;
-    const sessionId = crypto2.randomUUID();
-    const expiresAt = new Date(
-      Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN)
-    );
-    await this.userRepo.createSession({
-      userId: user.id,
-      token: sessionId,
-      expiresAt
-    });
-    const token = this.generateToken(user.id, user.email, user.role, sessionId);
-    return {
-      user: toAuthUser(user),
-      token,
-      sessionId
-    };
+    return this.createSessionForUser(user);
   }
   async login(data) {
     const email = data.email.toLowerCase().trim();
@@ -3244,6 +3308,9 @@ var AuthService = class {
     if (!validPassword) {
       throw AppError.unauthorized("Invalid email or password");
     }
+    return this.createSessionForUser(user);
+  }
+  async createSessionForUser(user) {
     const sessionId = crypto2.randomUUID();
     const expiresAt = new Date(
       Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN)
@@ -3414,6 +3481,367 @@ var AuthController = class {
 };
 var authController = new AuthController();
 
+// src/services/whop-oauth.service.ts
+import crypto3 from "crypto";
+import bcrypt2 from "bcryptjs";
+import { z as z13 } from "zod";
+var tokenResponseSchema = z13.object({
+  access_token: z13.string(),
+  refresh_token: z13.string().optional(),
+  id_token: z13.string().optional(),
+  token_type: z13.string(),
+  expires_in: z13.number()
+});
+var userInfoSchema = z13.object({
+  sub: z13.string(),
+  name: z13.string().optional(),
+  preferred_username: z13.string().optional(),
+  picture: z13.string().optional(),
+  email: z13.string().optional(),
+  email_verified: z13.boolean().optional()
+});
+function base64url(buffer) {
+  return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+var WhopOAuthService = class {
+  constructor(userRepo = userRepository, auth = authService) {
+    this.userRepo = userRepo;
+    this.auth = auth;
+  }
+  getBaseUrl() {
+    const isSandbox = process.env.WHOP_SANDBOX === "true" || env.WHOP_SANDBOX;
+    return isSandbox ? "https://sandbox-api.whop.com" : "https://api.whop.com";
+  }
+  getClientId() {
+    const id = process.env.WHOP_CLIENT_ID || process.env.WHOP_APP_ID || env.WHOP_CLIENT_ID || env.WHOP_APP_ID;
+    if (!id) {
+      throw AppError.internal(
+        "Whop Client ID is not configured (WHOP_CLIENT_ID or WHOP_APP_ID missing)"
+      );
+    }
+    return id;
+  }
+  getClientSecret() {
+    const secret = process.env.WHOP_CLIENT_SECRET || env.WHOP_CLIENT_SECRET;
+    if (!secret) {
+      throw AppError.internal(
+        "Whop Client Secret is not configured (WHOP_CLIENT_SECRET missing)"
+      );
+    }
+    return secret;
+  }
+  getRedirectUri(requestHost) {
+    const isLocalhost = requestHost && (requestHost.includes("localhost") || requestHost.includes("127.0.0.1"));
+    if (isLocalhost && env.NODE_ENV !== "production") {
+      return "http://localhost:3000/api/auth/callback";
+    }
+    const appBase = env.APP_URL.replace(/\/+$/, "");
+    return `${appBase}/api/auth/callback`;
+  }
+  generatePkce() {
+    const verifierBuffer = crypto3.randomBytes(32);
+    const codeVerifier = base64url(verifierBuffer);
+    const codeChallenge = base64url(
+      crypto3.createHash("sha256").update(codeVerifier).digest()
+    );
+    const state = base64url(crypto3.randomBytes(16));
+    const nonce = base64url(crypto3.randomBytes(16));
+    return {
+      codeVerifier,
+      codeChallenge,
+      state,
+      nonce,
+      createdAt: Date.now()
+    };
+  }
+  buildAuthorizeUrl(pkce, redirectUri) {
+    const clientId = this.getClientId();
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "openid profile email",
+      state: pkce.state,
+      nonce: pkce.nonce,
+      code_challenge: pkce.codeChallenge,
+      code_challenge_method: "S256"
+    });
+    return `${this.getBaseUrl()}/oauth/authorize?${params.toString()}`;
+  }
+  async exchangeCodeForTokens(code, codeVerifier, redirectUri) {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    const response = await fetch(`${this.getBaseUrl()}/oauth/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        client_secret: clientSecret,
+        code_verifier: codeVerifier
+      })
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const errorDesc = errBody?.error_description || errBody?.error || `HTTP ${response.status}`;
+      throw AppError.badRequest(`Whop token exchange failed: ${errorDesc}`);
+    }
+    const data = await response.json();
+    const parsed = tokenResponseSchema.safeParse(data);
+    if (!parsed.success) {
+      throw AppError.internal("Malformed token response from Whop OAuth");
+    }
+    return parsed.data;
+  }
+  async fetchUserInfo(accessToken) {
+    const response = await fetch(`${this.getBaseUrl()}/oauth/userinfo`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json"
+      }
+    });
+    if (!response.ok) {
+      throw AppError.badRequest(
+        `Failed to retrieve user info from Whop (HTTP ${response.status})`
+      );
+    }
+    const data = await response.json();
+    const parsed = userInfoSchema.safeParse(data);
+    if (!parsed.success) {
+      throw AppError.internal("Malformed userinfo response from Whop OAuth");
+    }
+    return parsed.data;
+  }
+  async revokeToken(refreshToken) {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    await fetch(`${this.getBaseUrl()}/oauth/revoke`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret
+      })
+    }).catch(() => {
+    });
+  }
+  async linkOrCreateUser(whopUser) {
+    const whopUserId = whopUser.sub.trim();
+    const existingIdentity = await this.userRepo.findWhopIdentityByWhopUserId(
+      whopUserId
+    );
+    if (existingIdentity?.user) {
+      return existingIdentity.user;
+    }
+    const userByWhopId = await this.userRepo.findByWhopUserId(whopUserId);
+    if (userByWhopId) {
+      await this.userRepo.createWhopIdentity({
+        userId: userByWhopId.id,
+        whopUserId,
+        email: whopUser.email
+      }).catch(() => {
+      });
+      return userByWhopId;
+    }
+    if (whopUser.email && whopUser.email_verified) {
+      const emailLower = whopUser.email.toLowerCase().trim();
+      const existingUserByEmail = await this.userRepo.findByEmail(emailLower);
+      if (existingUserByEmail) {
+        const linkedUser = await this.userRepo.linkWhopUser(
+          existingUserByEmail.id,
+          {
+            whopUserId,
+            emailVerified: existingUserByEmail.emailVerified || /* @__PURE__ */ new Date(),
+            image: existingUserByEmail.image || whopUser.picture || null
+          }
+        );
+        await this.userRepo.createWhopIdentity({
+          userId: linkedUser.id,
+          whopUserId,
+          email: whopUser.email
+        }).catch(() => {
+        });
+        await whopWebhookService.reconcileUserEntitlements(linkedUser.id, linkedUser.email).catch(() => {
+        });
+        return await this.userRepo.findById(linkedUser.id) ?? linkedUser;
+      }
+    }
+    const normalizedEmail = whopUser.email?.toLowerCase().trim() || `${whopUserId}@users.whop.com`;
+    let targetEmail = normalizedEmail;
+    const existing = await this.userRepo.findByEmail(targetEmail);
+    if (existing) {
+      targetEmail = `${whopUserId}-${Date.now()}@users.whop.com`;
+    }
+    const unguessablePassword = crypto3.randomBytes(32).toString("hex");
+    const salt = await bcrypt2.genSalt(10);
+    const passwordHash = await bcrypt2.hash(unguessablePassword, salt);
+    const name = whopUser.name?.trim() || whopUser.preferred_username?.trim() || "Whop User";
+    const newUser = await this.userRepo.createWhopUser({
+      email: targetEmail,
+      name,
+      passwordHash,
+      whopUserId,
+      emailVerified: whopUser.email_verified ? /* @__PURE__ */ new Date() : null,
+      image: whopUser.picture || null
+    });
+    await this.userRepo.createWhopIdentity({
+      userId: newUser.id,
+      whopUserId,
+      email: whopUser.email
+    }).catch(() => {
+    });
+    await whopWebhookService.reconcileUserEntitlements(newUser.id, newUser.email).catch(() => {
+    });
+    return await this.userRepo.findById(newUser.id) ?? newUser;
+  }
+  async authenticateFromCallback(params) {
+    if (!params.state || params.state !== params.expectedState) {
+      throw AppError.badRequest("Invalid OAuth state parameter (CSRF detected)");
+    }
+    const tokens = await this.exchangeCodeForTokens(
+      params.code,
+      params.codeVerifier,
+      params.redirectUri
+    );
+    if (tokens.id_token && params.expectedNonce) {
+      try {
+        const parts = tokens.id_token.split(".");
+        if (parts.length === 3) {
+          const payloadJson = Buffer.from(parts[1], "base64url").toString(
+            "utf8"
+          );
+          const payload = JSON.parse(payloadJson);
+          if (payload.nonce && payload.nonce !== params.expectedNonce) {
+            throw AppError.badRequest("OAuth ID token nonce mismatch");
+          }
+        }
+      } catch (err) {
+        if (err instanceof AppError) throw err;
+      }
+    }
+    const whopUser = await this.fetchUserInfo(tokens.access_token);
+    const user = await this.linkOrCreateUser(whopUser);
+    return this.auth.createSessionForUser(user);
+  }
+};
+var whopOAuthService = new WhopOAuthService();
+
+// src/controllers/whop-oauth.controller.ts
+function setNoStoreHeaders2(reply) {
+  reply.header(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, private"
+  );
+  reply.header("Pragma", "no-cache");
+  reply.header("Expires", "0");
+}
+function getAppBaseUrl(request) {
+  const host = request.headers.host;
+  if (host && (host.includes("localhost") || host.includes("127.0.0.1")) && env.NODE_ENV !== "production") {
+    return "http://localhost:3000";
+  }
+  return env.APP_URL.replace(/\/+$/, "");
+}
+var WhopOAuthController = class {
+  async login(request, reply) {
+    setNoStoreHeaders2(reply);
+    const pkce = whopOAuthService.generatePkce();
+    const redirectUri = whopOAuthService.getRedirectUri(request.headers.host);
+    reply.setCookie(
+      WHOP_PKCE_COOKIE_NAME,
+      JSON.stringify(pkce),
+      getWhopPkceCookieOptions()
+    );
+    const authorizeUrl = whopOAuthService.buildAuthorizeUrl(pkce, redirectUri);
+    return reply.redirect(authorizeUrl);
+  }
+  async callback(request, reply) {
+    setNoStoreHeaders2(reply);
+    const appBase = getAppBaseUrl(request);
+    const { code, state, error, error_description } = request.query;
+    if (error) {
+      reply.clearCookie(
+        WHOP_PKCE_COOKIE_NAME,
+        getClearWhopPkceCookieOptions()
+      );
+      const safeError = encodeURIComponent(error_description || error);
+      return reply.redirect(`${appBase}/login?error=${safeError}`);
+    }
+    if (!code || !state) {
+      reply.clearCookie(
+        WHOP_PKCE_COOKIE_NAME,
+        getClearWhopPkceCookieOptions()
+      );
+      return reply.redirect(`${appBase}/login?error=missing_oauth_params`);
+    }
+    const rawPkce = request.cookies?.[WHOP_PKCE_COOKIE_NAME];
+    if (!rawPkce) {
+      return reply.redirect(`${appBase}/login?error=missing_pkce_state`);
+    }
+    let pkce;
+    try {
+      pkce = JSON.parse(rawPkce);
+    } catch {
+      reply.clearCookie(
+        WHOP_PKCE_COOKIE_NAME,
+        getClearWhopPkceCookieOptions()
+      );
+      return reply.redirect(`${appBase}/login?error=invalid_pkce_state`);
+    }
+    const redirectUri = whopOAuthService.getRedirectUri(request.headers.host);
+    try {
+      const result = await whopOAuthService.authenticateFromCallback({
+        code,
+        state,
+        expectedState: pkce.state,
+        codeVerifier: pkce.codeVerifier,
+        expectedNonce: pkce.nonce,
+        redirectUri
+      });
+      reply.setCookie(
+        AUTH_COOKIE_NAME,
+        result.token,
+        getAuthCookieOptions()
+      );
+      reply.clearCookie(
+        WHOP_PKCE_COOKIE_NAME,
+        getClearWhopPkceCookieOptions()
+      );
+      return reply.redirect(`${appBase}/dashboard`);
+    } catch (err) {
+      reply.clearCookie(
+        WHOP_PKCE_COOKIE_NAME,
+        getClearWhopPkceCookieOptions()
+      );
+      const safeMsg = encodeURIComponent(
+        err?.message || "Whop authentication failed"
+      );
+      return reply.redirect(`${appBase}/login?error=${safeMsg}`);
+    }
+  }
+  async logout(request, reply) {
+    setNoStoreHeaders2(reply);
+    const appBase = getAppBaseUrl(request);
+    if (request.user?.sessionId) {
+      await authService.logout(request.user.sessionId).catch(() => {
+      });
+    }
+    reply.clearCookie(AUTH_COOKIE_NAME, getClearAuthCookieOptions());
+    reply.clearCookie(WHOP_PKCE_COOKIE_NAME, getClearWhopPkceCookieOptions());
+    return reply.redirect(`${appBase}/login`);
+  }
+};
+var whopOAuthController = new WhopOAuthController();
+
 // src/middleware/auth.middleware.ts
 import jwt3 from "jsonwebtoken";
 async function authenticate(request, reply) {
@@ -3507,6 +3935,18 @@ var authRoutes = async (fastify2) => {
     "/me",
     { preHandler: [authenticate] },
     authController.me.bind(authController)
+  );
+  fastify2.get(
+    "/login",
+    whopOAuthController.login.bind(whopOAuthController)
+  );
+  fastify2.get(
+    "/callback",
+    whopOAuthController.callback.bind(whopOAuthController)
+  );
+  fastify2.get(
+    "/logout",
+    whopOAuthController.logout.bind(whopOAuthController)
   );
 };
 
@@ -5387,7 +5827,7 @@ var ResumeController = class {
 var resumeController = new ResumeController();
 
 // src/services/quality.service.ts
-import crypto3 from "crypto";
+import crypto4 from "crypto";
 
 // src/repositories/job.repository.ts
 var JobRepository = class {
@@ -13206,11 +13646,11 @@ function computeResumeContentHash(resumeData, templateConfig) {
     data: resumeData,
     config: templateConfig || null
   });
-  return crypto3.createHash("sha256").update(payload).digest("hex");
+  return crypto4.createHash("sha256").update(payload).digest("hex");
 }
 function computeJobContentHash(jobParsedData) {
   const payload = JSON.stringify(jobParsedData || {});
-  return crypto3.createHash("sha256").update(payload).digest("hex");
+  return crypto4.createHash("sha256").update(payload).digest("hex");
 }
 var QualityService = class {
   resumeRepo = resumeRepository;
@@ -16233,7 +16673,7 @@ var WorkflowOrchestrator = class {
 var workflowOrchestrator = new WorkflowOrchestrator();
 
 // src/services/workflow.service.ts
-import crypto4 from "crypto";
+import crypto5 from "crypto";
 var WorkflowService = class {
   constructor(workflowRepo = workflowRepository, orchestrator = workflowOrchestrator) {
     this.workflowRepo = workflowRepo;
@@ -16262,7 +16702,7 @@ var WorkflowService = class {
     return run;
   }
   async triggerWorkflow(userId, req) {
-    const workflowId = crypto4.randomUUID();
+    const workflowId = crypto5.randomUUID();
     const workflowRun = await this.workflowRepo.create({
       userId,
       resumeId: req.resumeId,

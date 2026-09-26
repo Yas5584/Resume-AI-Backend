@@ -1,4 +1,4 @@
-import { prisma, User, Session } from "@resumeai/database";
+import { prisma, User, Session, WhopIdentity } from "@resumeai/database";
 
 export class UserRepository {
   async findById(id: string): Promise<User | null> {
@@ -90,6 +90,74 @@ export class UserRepository {
   async deleteUserSessions(userId: string): Promise<void> {
     await prisma.session.deleteMany({
       where: { userId },
+    });
+  }
+
+  // Whop Identity Management
+  async findWhopIdentityByWhopUserId(
+    whopUserId: string,
+  ): Promise<(WhopIdentity & { user: User }) | null> {
+    return prisma.whopIdentity.findUnique({
+      where: { whopUserId },
+      include: { user: true },
+    });
+  }
+
+  async findByWhopUserId(whopUserId: string): Promise<User | null> {
+    return prisma.user.findUnique({
+      where: { whopUserId },
+    });
+  }
+
+  async createWhopIdentity(data: {
+    userId: string;
+    whopUserId: string;
+    email?: string | null;
+  }): Promise<WhopIdentity> {
+    return prisma.whopIdentity.create({
+      data: {
+        userId: data.userId,
+        whopUserId: data.whopUserId,
+        email: data.email ?? null,
+      },
+    });
+  }
+
+  async createWhopUser(data: {
+    email: string;
+    name: string;
+    passwordHash: string;
+    whopUserId: string;
+    emailVerified?: Date | null;
+    image?: string | null;
+  }): Promise<User> {
+    return prisma.user.create({
+      data: {
+        email: data.email.toLowerCase().trim(),
+        name: data.name.trim(),
+        passwordHash: data.passwordHash,
+        whopUserId: data.whopUserId,
+        emailVerified: data.emailVerified,
+        image: data.image,
+      },
+    });
+  }
+
+  async linkWhopUser(
+    userId: string,
+    data: {
+      whopUserId: string;
+      emailVerified?: Date | null;
+      image?: string | null;
+    },
+  ): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        whopUserId: data.whopUserId,
+        ...(data.emailVerified ? { emailVerified: data.emailVerified } : {}),
+        ...(data.image ? { image: data.image } : {}),
+      },
     });
   }
 }

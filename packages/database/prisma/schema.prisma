@@ -100,6 +100,7 @@ model User {
   contentProposals    ContentProposal[]
   qualityReports      ResumeQualityReport[]
   whopSubscriptions   WhopSubscription[]
+  whopIdentities      WhopIdentity[]
 
   @@map("users")
 }
@@ -467,6 +468,21 @@ model WhopSubscription {
   @@index([email])
   @@index([status])
   @@map("whop_subscriptions")
+}
+
+model WhopIdentity {
+  id         String   @id @default(uuid())
+  userId     String
+  whopUserId String   @unique
+  email      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([whopUserId])
+  @@map("whop_identities")
 }
 
 model WebhookEvent {

@@ -65,3 +65,38 @@ export function getClearAuthCookieOptions(): CookieSerializeOptions {
     signed: false,
   };
 }
+
+export const WHOP_PKCE_COOKIE_NAME = "whop_pkce";
+
+export function getWhopPkceCookieOptions(): CookieSerializeOptions {
+  const isProd = env.NODE_ENV === "production";
+  const sameSite =
+    env.COOKIE_SAME_SITE !== "lax"
+      ? env.COOKIE_SAME_SITE
+      : isProd
+        ? "none"
+        : "lax";
+  const secure = sameSite === "none" ? true : isProd;
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: "/",
+    maxAge: 600, // 10 minutes
+    signed: false,
+  };
+}
+
+export function getClearWhopPkceCookieOptions(): CookieSerializeOptions {
+  const { httpOnly, secure, sameSite, path } = getWhopPkceCookieOptions();
+  return {
+    httpOnly,
+    secure,
+    sameSite,
+    path,
+    maxAge: 0,
+    expires: new Date(0),
+    signed: false,
+  };
+}

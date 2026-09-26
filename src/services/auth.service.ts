@@ -75,24 +75,7 @@ export class AuthService {
       .catch(() => {});
     user = (await this.userRepo.findById(user.id)) ?? user;
 
-    const sessionId = crypto.randomUUID();
-    const expiresAt = new Date(
-      Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN),
-    );
-
-    await this.userRepo.createSession({
-      userId: user.id,
-      token: sessionId,
-      expiresAt,
-    });
-
-    const token = this.generateToken(user.id, user.email, user.role, sessionId);
-
-    return {
-      user: toAuthUser(user),
-      token,
-      sessionId,
-    };
+    return this.createSessionForUser(user);
   }
 
   async login(
@@ -112,6 +95,12 @@ export class AuthService {
       throw AppError.unauthorized("Invalid email or password");
     }
 
+    return this.createSessionForUser(user);
+  }
+
+  async createSessionForUser(
+    user: User,
+  ): Promise<{ user: AuthUser; token: string; sessionId: string }> {
     const sessionId = crypto.randomUUID();
     const expiresAt = new Date(
       Date.now() + parseExpiresInToMs(env.JWT_EXPIRES_IN),
