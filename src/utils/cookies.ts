@@ -27,7 +27,7 @@ function parseDurationToSeconds(durationStr: string): number {
 }
 
 export function getAuthCookieOptions(): CookieSerializeOptions {
-  const isProd = env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   // If explicitly set in environment, use that; otherwise default to "none" in production
   // (required for Whop embedded iframe) and "lax" in local development.
   const sameSite =
@@ -69,7 +69,7 @@ export function getClearAuthCookieOptions(): CookieSerializeOptions {
 export const WHOP_PKCE_COOKIE_NAME = "whop_pkce";
 
 export function getWhopPkceCookieOptions(): CookieSerializeOptions {
-  const isProd = env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   const sameSite =
     env.COOKIE_SAME_SITE !== "lax"
       ? env.COOKIE_SAME_SITE

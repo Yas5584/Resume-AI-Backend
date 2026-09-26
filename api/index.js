@@ -2302,7 +2302,7 @@ function parseDurationToSeconds(durationStr) {
   }
 }
 function getAuthCookieOptions() {
-  const isProd = env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   const sameSite = env.COOKIE_SAME_SITE !== "lax" ? env.COOKIE_SAME_SITE : isProd ? "none" : "lax";
   const secure = sameSite === "none" ? true : isProd;
   return {
@@ -2328,7 +2328,7 @@ function getClearAuthCookieOptions() {
 }
 var WHOP_PKCE_COOKIE_NAME = "whop_pkce";
 function getWhopPkceCookieOptions() {
-  const isProd = env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   const sameSite = env.COOKIE_SAME_SITE !== "lax" ? env.COOKIE_SAME_SITE : isProd ? "none" : "lax";
   const secure = sameSite === "none" ? true : isProd;
   return {
